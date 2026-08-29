@@ -1,3 +1,30 @@
 spring:
   application:
     name: GestionFacturas
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/gastos}
+    username: ${DB_USERNAME:gestionFacturas}
+    password: ${DB_PASSWORD:SECRET}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}

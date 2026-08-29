@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: gastos-postgres
+    environment:
+      POSTGRES_DB: gastos
+      POSTGRES_USER: gastos
+      POSTGRES_PASSWORD: gastos
+    ports:
+      - "5432:5432"
+    volumes:
+      - gastos-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gastos -d gastos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Fase 1 — almacenamiento de archivos (descomentar cuando toque)
+  # minio:
+  #   image: minio/minio
+  #   container_name: gastos-minio
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: gastos
+  #     MINIO_ROOT_PASSWORD: gastos12345
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - gastos-miniodata:/data
+
+volumes:
+  gastos-pgdata:
+  # gastos-miniodata:
