@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$j = [Console]::In.ReadToEnd() | ConvertFrom-Json; if ($j.tool_input.file_path -notlike '*.java') { exit 0 }; Push-Location 'E:\\spring-projects\\GestionFacturas'; $out = & .\\mvnw.cmd -q -o compile 2>&1; $code = $LASTEXITCODE; Pop-Location; if ($code -ne 0) { $r = ($out | Out-String); $j2 = @{decision='block'; reason=('Compile failed after edit:' + [Environment]::NewLine + $r)} | ConvertTo-Json -Compress; Write-Output $j2 }",
+            "timeout": 120,
+            "statusMessage": "Compiling (mvn -o compile)..."
+          }
+        ]
+      }
+    ]
+  }
+}
