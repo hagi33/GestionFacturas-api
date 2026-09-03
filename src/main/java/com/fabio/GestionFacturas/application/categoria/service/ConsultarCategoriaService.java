@@ -1,7 +1,7 @@
 package com.fabio.GestionFacturas.application.categoria.service;
 
-import com.fabio.GestionFacturas.application.categoria.port.in.ConsultarCategoriaPort;
-import com.fabio.GestionFacturas.application.categoria.port.out.CategotiaRepositoryPort;
+import com.fabio.GestionFacturas.application.categoria.port.in.ConsultarCategoriaUseCase;
+import com.fabio.GestionFacturas.application.categoria.port.out.CategoriaRepositoryPort;
 
 import com.fabio.GestionFacturas.domain.categoria.Categoria;
 import org.springframework.stereotype.Service;
@@ -10,19 +10,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-public class ConsultarCategoriaService implements ConsultarCategoriaPort{
+public class ConsultarCategoriaService implements ConsultarCategoriaUseCase {
 
 
-    private final CategotiaRepositoryPort categotiaRepositoryPort;
+    private final CategoriaRepositoryPort categoriaRepositoryPort;
 
-    public ConsultarCategoriaService(CategotiaRepositoryPort categotiaRepositoryPort) {
-        this.categotiaRepositoryPort = categotiaRepositoryPort;
+    public ConsultarCategoriaService(CategoriaRepositoryPort categoriaRepositoryPort) {
+        this.categoriaRepositoryPort = categoriaRepositoryPort;
     }
 
 
     @Override
     @Transactional(readOnly = true)
     public List<Categoria> listarTodas() {
-        return categotiaRepositoryPort.buscarTodas();
+        return categoriaRepositoryPort.buscarTodas();
     }
 }

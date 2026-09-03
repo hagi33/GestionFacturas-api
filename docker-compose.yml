@@ -1,20 +1,21 @@
 services:
   postgres:
     image: postgres:17
-    container_name: gastos-postgres
+    container_name: gestionfacturas
     environment:
-      POSTGRES_DB: gastos
-      POSTGRES_USER: gastos
-      POSTGRES_PASSWORD: gastos
+      POSTGRES_DB: gestionfacturas
+      POSTGRES_USER: gestion
+      POSTGRES_PASSWORD: gestion-facturas
     ports:
       - "5432:5432"
     volumes:
       - gastos-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gastos -d gastos"]
+      test: ["CMD-SHELL", "pg_isready -U gestion -d gestionfacturas"]
       interval: 5s
       timeout: 5s
       retries: 5
+
 
   # Fase 1 — almacenamiento de archivos (descomentar cuando toque)
   # minio:

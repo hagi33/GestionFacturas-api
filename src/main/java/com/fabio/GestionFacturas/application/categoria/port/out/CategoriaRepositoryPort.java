@@ -5,7 +5,7 @@ import com.fabio.GestionFacturas.domain.categoria.Categoria;
 import java.util.List;
 import java.util.Optional;
 
-public interface CategotiaRepositoryPort {
+public interface CategoriaRepositoryPort {
 
     List<Categoria> buscarTodas();
 

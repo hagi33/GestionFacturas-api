@@ -3,9 +3,9 @@ spring:
     name: GestionFacturas
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/gastos}
-    username: ${DB_USERNAME:gestionFacturas}
-    password: ${DB_PASSWORD:SECRET}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/gestionfacturas}
+    username: ${DB_USERNAME:gestion}
+    password: ${DB_PASSWORD:gestion-facturas}
 
   jpa:
     hibernate:

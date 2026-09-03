@@ -4,7 +4,7 @@ import com.fabio.GestionFacturas.domain.categoria.Categoria;
 
 import java.util.List;
 
-public interface ConsultarCategoriaPort {
+public interface ConsultarCategoriaUseCase {
 
     List<Categoria> listarTodas();
 
