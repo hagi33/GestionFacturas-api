@@ -10,7 +10,7 @@ public record Dinero(BigDecimal cantidad, String moneda) {
         Objects.requireNonNull(moneda, "La moneda no puede ser nula");
 
         if (cantidad.scale() > 2){
-            throw new IllegalArgumentException("La cantidad no puede tener más de2 decimales");
+            throw new IllegalArgumentException("La cantidad no puede tener más de 2 decimales");
         }
         if (moneda.length() != 3){
             throw new IllegalArgumentException("La moneda debe ser un códio ISO de 3 dígitos");

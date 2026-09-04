@@ -22,7 +22,7 @@ import java.util.Optional;
 @RequestMapping("/api/gastos")
 public class GastoController {
 
-    // Fase 0: usuarioId hardcodeado a 1L; se sustituirá por el usuario autenticado vía JWT en Fase 1.
+    // Fase 0: usuarioId hardcodeado a 1L; se sustituirá por el usuario autenticado vía JWT en Fase 1
     private static final Long USUARIO_ID_TEMPORAL = 1L;
 
     private final CrearGastoUseCase crearGastoUseCase;
