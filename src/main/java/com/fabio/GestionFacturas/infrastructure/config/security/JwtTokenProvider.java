@@ -1,5 +1,7 @@
 package com.fabio.GestionFacturas.infrastructure.config.security;
 
+
+import com.fabio.GestionFacturas.application.usuario.port.out.TokenGeneradorPort;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +13,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider implements TokenGeneradorPort{
 
 
     private final SecretKey secretKey;
@@ -26,7 +28,7 @@ public class JwtTokenProvider {
         this.accessExpirationMs = accessExpirationMs;
     }
 
-
+    @Override
     public String generarAccessToken(Long usuarioId, String email){
 
         Date ahora = new Date();
@@ -66,6 +68,7 @@ public class JwtTokenProvider {
         }
 
     }
+
 
 
 }
