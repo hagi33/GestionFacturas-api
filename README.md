@@ -1,6 +1,6 @@
 # GestionFacturas — Control económico para autónomos
 
-> ⚠️ **Proyecto en desarrollo activo.** Este README describe el estado actual y la
+> **Proyecto en desarrollo activo.** Este README describe el estado actual y la
 > dirección del proyecto, y evoluciona con él.
 
 Aplicación para que **freelances y autónomos individuales** lleven el control de su
