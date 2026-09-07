@@ -1,6 +1,6 @@
 # GestionFacturas — Control económico para autónomos
 
-> **Proyecto en desarrollo activo.** Este README describe el estado actual y la
+> ⚠️ **Proyecto en desarrollo activo.** Este README describe el estado actual y la
 > dirección del proyecto, y evoluciona con él.
 
 Aplicación para que **freelances y autónomos individuales** lleven el control de su
@@ -44,19 +44,50 @@ trabajo ya ordenado.
 Arquitectura **hexagonal (puertos y adaptadores)**, en tres capas con las dependencias
 apuntando siempre hacia el dominio:
 
-```
-domain          -> nucleo de negocio. POJOs puros, sin Spring ni JPA.
-application     -> casos de uso + puertos (interfaces in/out).
-infrastructure  -> adaptadores (web, persistencia, seguridad) + configuracion.
-```
+- **domain** — núcleo de negocio. POJOs puros, sin Spring ni JPA.
+- **application** — casos de uso + puertos (interfaces in/out).
+- **infrastructure** — adaptadores (web, persistencia, seguridad) + configuración.
 
 **Regla de dependencia:** `infrastructure` conoce `application`, que conoce `domain`. El
-dominio no conoce a nadie. La aplicacion **define** los puertos; la infraestructura los
+dominio no conoce a nadie. La aplicación **define** los puertos; la infraestructura los
 **implementa**.
 
-Para cada entidad hay **tres modelos separados** a proposito: el DTO (contrato de la API),
+```mermaid
+flowchart TB
+    subgraph INFRA["INFRAESTRUCTURA - Spring, JPA, jjwt"]
+        direction TB
+        subgraph APP["APLICACION - casos de uso + puertos"]
+            direction TB
+            subgraph DOM["DOMINIO - POJOs puros"]
+                D1["Gasto - Dinero - Usuario<br/>Categoria - EstadoGasto"]
+            end
+            PIN["Puertos IN<br/>CrearGastoUseCase<br/>AutenticarUseCase<br/>RegistrarUsuarioUseCase"]
+            SVC["Servicios (impl)<br/>CrearGastoService<br/>AutenticarService"]
+            POUT["Puertos OUT<br/>GastoRepositoryPort<br/>UsuarioRepositoryPort<br/>TokenGeneradorPort"]
+        end
+        AIN["Adaptadores IN<br/>GastoController<br/>AuthController<br/>(REST - HTTP)"]
+        AOUT["Adaptadores OUT<br/>JPA - PostgreSQL<br/>JwtTokenProvider"]
+    end
+
+    AIN --> PIN
+    PIN --> SVC
+    SVC --> DOM
+    SVC --> POUT
+    AOUT -.implementa.-> POUT
+
+    classDef dom fill:#e8e8e8,stroke:#666,color:#000
+    classDef app fill:#efe6f7,stroke:#8257b5,color:#000
+    classDef adin fill:#e3f0fb,stroke:#3b82c4,color:#000
+    classDef adout fill:#e0f2ef,stroke:#2fa894,color:#000
+    class D1 dom
+    class PIN,SVC,POUT app
+    class AIN adin
+    class AOUT adout
+```
+
+Para cada entidad hay **tres modelos separados** a propósito: el DTO (contrato de la API),
 el modelo de dominio (negocio) y la entidad JPA (persistencia). Los mappers traducen entre
-ellos, desacoplando la API y la base de datos del nucleo.
+ellos, desacoplando la API y la base de datos del núcleo.
 
 ### Estructura de paquetes
 
@@ -80,54 +111,75 @@ com.fabio.GestionFacturas
 
 ## Flujo de datos
 
-### Crear un gasto (recorrido por las capas)
+### Flujo: crear un gasto
 
 ```
 POST /api/gastos
-   -> GastoController          (adaptador de entrada, traduce HTTP)
-   -> CrearGastoUseCase        (puerto in)
-   -> CrearGastoService        (aplicacion: convierte importes a Dinero)
-   -> Gasto                    (dominio: POJO con invariantes)
-   -> GastoRepositoryPort      (puerto out)
-   -> GastoPersistenceAdapter  (adaptador: mapea a JPA)
-   -> PostgreSQL
+   │
+   ▼
+GastoController          (adaptador IN — traduce HTTP a comando)
+   │  usa el puerto
+   ▼
+CrearGastoUseCase        (puerto IN)
+   │
+   ▼
+CrearGastoService        (aplicación — convierte importes a Dinero)
+   │  construye
+   ▼
+Gasto                    (dominio — valida invariantes)
+   │  persiste vía puerto
+   ▼
+GastoRepositoryPort      (puerto OUT)
+   │
+   ▼
+GastoPersistenceAdapter  (adaptador OUT — mapea a JPA)
+   │
+   ▼
+PostgreSQL
 ```
 
-### Autenticacion (login)
+### Flujo: login
 
 ```
 POST /api/auth/login
-   -> AuthController           (traduce HTTP)           [pendiente]
-   -> AutenticarUseCase        (puerto in)
-   -> AutenticarService        (busca usuario, verifica contrasena, pide token)
-       -> UsuarioRepositoryPort   (puerto out) -> busca por email
-       -> PasswordEncoder         -> BCrypt.matches (verifica sin des-hashear)
-       -> TokenGeneradorPort      (puerto out) -> genera el token
-           -> JwtTokenProvider    (adaptador: firma el JWT)
-   -> devuelve access token
+   │
+   ▼
+AuthController           (adaptador IN)
+   │
+   ▼
+AutenticarUseCase        (puerto IN)
+   │
+   ▼
+AutenticarService        (aplicación)
+   ├─► UsuarioRepositoryPort ──► busca por email
+   ├─► PasswordEncoder ───────► BCrypt.matches (verifica)
+   └─► TokenGeneradorPort ────► JwtTokenProvider (firma el JWT)
+   │
+   ▼
+devuelve access token
 ```
 
 Todo lo que cruza los puertos son objetos de dominio o tipos simples; las entidades JPA no
-salen de la persistencia, ni jjwt entra en la capa de aplicacion.
+salen de la persistencia, ni jjwt entra en la capa de aplicación.
 
 ## Seguridad
 
-- Contrasenas hasheadas con **BCrypt** (nunca en claro).
-- Autenticacion con **JWT**: access token corto + refresh token revocable en BD.
+- Contraseñas hasheadas con **BCrypt** (nunca en claro).
+- Autenticación con **JWT**: access token corto + refresh token revocable en BD.
 - El id del usuario viaja como *subject* del token; el email como *claim* informativo.
-- El login devuelve el mismo error para email inexistente y contrasena incorrecta, para no
-  revelar que emails estan registrados.
+- El login devuelve el mismo error para email inexistente y contraseña incorrecta, para no
+  revelar qué emails están registrados.
 
 ## Estado actual
 
 **Fase 0 — Fundamentos** (cerrada y testeada)
 - [x] Dominio: `Gasto`, `Categoria`, `Usuario`, `Dinero`, `EstadoGasto`
-- [x] Casos de uso y persistencia de gasto, categoria y usuario
-- [x] Controllers de gasto, categoria y health, con manejo global de errores
+- [x] Casos de uso y persistencia de gasto, categoría y usuario
+- [x] Controllers de gasto, categoría y health, con manejo global de errores
 - [x] Migraciones Flyway, entorno Docker (PostgreSQL)
 - [x] Tests unitarios de dominio y servicios (JUnit 5 + Mockito)
 
-**Seguridad (JWT)** (en construccion)
+**Seguridad (JWT)** (en construcción)
 - [x] `JwtTokenProvider` con su puerto `TokenGeneradorPort` (con tests)
 - [x] Registro de usuario (servicio + BCrypt)
 - [x] Login (servicio, construido con TDD)
@@ -141,14 +193,14 @@ salen de la persistencia, ni jjwt entra en la capa de aplicacion.
 | Fase | Foco |
 |------|------|
 | **Fase 0** | Backend en pie, CRUD de gasto de extremo a extremo (hecho) |
-| **Seguridad** | Autenticacion JWT completa (en curso) |
+| **Seguridad** | Autenticación JWT completa (en curso) |
 | **Fase 1** | OCR + almacenamiento de archivos de factura |
 | **Fase 2** | Ingresos y clientes |
 | **Fase 3** | Dashboard: beneficio por periodo, rentabilidad por cliente, pendientes de cobro |
-| **Fase 4** | Exportacion al gestor, pulido, despliegue |
-| **v1+** | Duplicados, recurrentes, presupuestos, categorizacion automatica... |
+| **Fase 4** | Exportación al gestor, pulido, despliegue |
+| **v1+** | Duplicados, recurrentes, presupuestos, categorización automática... |
 
-## Como arrancar (desarrollo)
+## Cómo arrancar (desarrollo)
 
 **Requisitos:** Java 21, Docker, Maven.
 
@@ -164,7 +216,7 @@ cp .env.example .env
 ./mvnw spring-boot:run
 ```
 
-La API queda en `http://localhost:8080`. Con springdoc, la documentacion interactiva en
+La API queda en `http://localhost:8080`. Con springdoc, la documentación interactiva en
 `http://localhost:8080/swagger-ui.html`.
 
 ## Tests
@@ -174,7 +226,7 @@ La API queda en `http://localhost:8080`. Con springdoc, la documentacion interac
 ```
 
 Tests unitarios de dominio (`Dinero`, `Gasto`), de servicios (con Mockito) y del generador
-de tokens. El login se construyo con TDD (test primero).
+de tokens. El login se construyó con TDD (test primero).
 
 ## Variables de entorno
 
@@ -183,4 +235,4 @@ Ver `.env.example`. Principales: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SE
 
 ---
 
-*Proyecto personal en desarrollo. La documentacion se amplia conforme avanzan las fases.*
+*Proyecto personal en desarrollo. La documentación se amplía conforme avanzan las fases.*
