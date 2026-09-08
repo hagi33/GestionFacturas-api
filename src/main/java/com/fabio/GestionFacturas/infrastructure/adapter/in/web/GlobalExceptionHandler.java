@@ -1,6 +1,8 @@
 package com.fabio.GestionFacturas.infrastructure.adapter.in.web;
 
 import com.fabio.GestionFacturas.domain.gasto.GastoInvalidoException;
+import com.fabio.GestionFacturas.domain.usuario.CredencialesInvalidadException;
+import com.fabio.GestionFacturas.domain.usuario.EmailYaRegistradoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -32,4 +34,21 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errores);
     }
+
+    @ExceptionHandler(EmailYaRegistradoException.class)
+    public ResponseEntity<Map<String, String>> handleEmailDuplicado(EmailYaRegistradoException ex){
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);      // 409
+    }
+
+
+    @ExceptionHandler(CredencialesInvalidadException.class)
+    public ResponseEntity<Map<String , String>> handleCredencialesInvalidas(CredencialesInvalidadException ex){
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);  // 401
+    }
 }
+
+
