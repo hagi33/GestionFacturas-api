@@ -169,6 +169,9 @@ salen de la persistencia, ni jjwt entra en la capa de aplicación.
 - El id del usuario viaja como *subject* del token; el email como *claim* informativo.
 - El login devuelve el mismo error para email inexistente y contraseña incorrecta, para no
   revelar qué emails están registrados.
+- Rotación de refresh tokens (reuse detection): pendiente. Actualmente un refresh token
+  es válido hasta que expira o se revoca; no se rota en cada uso. Mejora de seguridad
+  prevista para una fase posterior.
 
 ## Estado actual
 
