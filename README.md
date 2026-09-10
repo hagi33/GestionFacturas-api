@@ -183,10 +183,10 @@ salen de la persistencia, ni jjwt entra en la capa de aplicación.
 - [x] `JwtTokenProvider` con su puerto `TokenGeneradorPort` (con tests)
 - [x] Registro de usuario (servicio + BCrypt)
 - [x] Login (servicio, construido con TDD)
-- [ ] `AuthController` (endpoints `/register`, `/login`)
-- [ ] `JwtAuthenticationFilter` + endurecer `SecurityConfig`
+- [x] `AuthController` (endpoints `/register`, `/login`)
+- [x] `JwtAuthenticationFilter` + endurecer `SecurityConfig`
+- [x] Sustituir el andamio temporal `usuarioId = 1L` por el usuario autenticado real
 - [ ] Refresh tokens revocables en BD (`/refresh`, `/logout`)
-- [ ] Sustituir el andamio temporal `usuarioId = 1L` por el usuario autenticado real
 
 ## Roadmap
 

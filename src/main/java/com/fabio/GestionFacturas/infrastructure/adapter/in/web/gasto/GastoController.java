@@ -8,6 +8,7 @@ import com.fabio.GestionFacturas.infrastructure.adapter.in.web.gasto.dto.GastoRe
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,9 +23,6 @@ import java.util.Optional;
 @RequestMapping("/api/gastos")
 public class GastoController {
 
-    // Fase 0: usuarioId hardcodeado a 1L; se sustituirá por el usuario autenticado vía JWT en Fase 1
-    private static final Long USUARIO_ID_TEMPORAL = 1L;
-
     private final CrearGastoUseCase crearGastoUseCase;
     private final ConsultarGastosUseCase consultarGastosUseCase;
 
@@ -34,22 +32,24 @@ public class GastoController {
     }
 
     @PostMapping
-    public ResponseEntity<GastoResponse> crear(@Valid @RequestBody CrearGastoRequest request) {
-        Gasto gasto = crearGastoUseCase.crear(GastoWebMapper.aComando(request, USUARIO_ID_TEMPORAL));
+    public ResponseEntity<GastoResponse> crear(@Valid @RequestBody CrearGastoRequest request,
+                                               @AuthenticationPrincipal Long usuarioId) {
+        Gasto gasto = crearGastoUseCase.crear(GastoWebMapper.aComando(request, usuarioId));
         return ResponseEntity.status(HttpStatus.CREATED).body(GastoWebMapper.aRespuesta(gasto));
     }
 
     @GetMapping
-    public List<GastoResponse> listar() {
-        return consultarGastosUseCase.listarPorUsuario(USUARIO_ID_TEMPORAL)
+    public List<GastoResponse> listar(@AuthenticationPrincipal Long usuarioId) {
+        return consultarGastosUseCase.listarPorUsuario(usuarioId)
                 .stream()
                 .map(GastoWebMapper::aRespuesta)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GastoResponse> obtenerPorId(@PathVariable Long id) {
-        Optional<Gasto> gasto = consultarGastosUseCase.obtenerPorId(id, USUARIO_ID_TEMPORAL);
+    public ResponseEntity<GastoResponse> obtenerPorId(@PathVariable Long id,
+                                                      @AuthenticationPrincipal Long usuarioId) {
+        Optional<Gasto> gasto = consultarGastosUseCase.obtenerPorId(id, usuarioId);
         if (gasto.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
