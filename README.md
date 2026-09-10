@@ -186,7 +186,7 @@ salen de la persistencia, ni jjwt entra en la capa de aplicación.
 - [x] `AuthController` (endpoints `/register`, `/login`)
 - [x] `JwtAuthenticationFilter` + endurecer `SecurityConfig`
 - [x] Sustituir el andamio temporal `usuarioId = 1L` por el usuario autenticado real
-- [ ] Refresh tokens revocables en BD (`/refresh`, `/logout`)
+- [ ] Refresh tokens revocables en BD (`/refresh`, `/logout`) — sin rotación (rotación pendiente)
 
 ## Roadmap
 
