@@ -122,8 +122,7 @@ Authentication is JWT-based and working. Key pieces and conventions:
   `/api/auth/**`, `/api/health`, and springdoc/swagger routes (`/v3/api-docs/**`,
   `/swagger-ui/**`, `/swagger-ui.html`). Everything else requires authentication.
 - **Auth endpoints**: `POST /api/auth/register`, `POST /api/auth/login` (both public).
-- **Refresh tokens (revocable, DB-stored)**: planned — the "option C" approach, not yet
-  implemented.
+- **Refresh tokens (revocable, DB-stored)**: planned — the "option C" approach, implemented.
 
 ## Error handling (HTTP status mapping)
 

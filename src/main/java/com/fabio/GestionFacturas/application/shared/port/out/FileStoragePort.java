@@ -1,7 +1,11 @@
 package com.fabio.GestionFacturas.application.shared.port.out;
 
 public interface FileStoragePort {
-    // Fase 1: guardar/recuperar el archivo del gasto.
 
+    String guardar(byte[] contenido, String nombreOriginal, String contentType);
+
+    byte[] recuperar(String referencia);
+
+    void eliminar(String referencia);
 
 }

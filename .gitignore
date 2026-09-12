@@ -9,6 +9,9 @@ target/
 *.env
 !.env.example
 
+### Local file storage (Phase 1 - FileStoragePort) ###
+/storage/
+
 ### STS ###
 .apt_generated
 .classpath
