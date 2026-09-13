@@ -15,13 +15,14 @@ public class Gasto {
     private Dinero baseImponible;
     private Dinero iva;
     private Dinero total;
+    private final String referenciaArchivo;
     private boolean deducible;
     private EstadoGasto estado;
     private final LocalDateTime creadoEn;
 
     public Gasto(Long id, Long usuarioId, Long categoriaId, String emisor,
                    LocalDate fechaEmision, Dinero baseImponible, Dinero iva, Dinero total,
-                   boolean deducible, EstadoGasto estado, LocalDateTime creadoEn) {
+                   String referenciaArchivo, boolean deducible, EstadoGasto estado, LocalDateTime creadoEn) {
         if (usuarioId == null) {
             throw new GastoInvalidoException("El gasto debe tener un usuario");
         }
@@ -44,6 +45,7 @@ public class Gasto {
         this.baseImponible = baseImponible;
         this.iva = iva;
         this.total = total;
+        this.referenciaArchivo = referenciaArchivo;
         this.deducible = deducible;
         this.estado = estadoInicial;
         this.creadoEn = fechaCreacion;
@@ -52,7 +54,14 @@ public class Gasto {
     public static Gasto crearBorrador(Long usuarioId, String emisor, LocalDate fechaEmision,
                                         Dinero baseImponible, Dinero iva, Dinero total) {
         return new Gasto(null, usuarioId, null, emisor, fechaEmision,
-                baseImponible, iva, total, false, EstadoGasto.BORRADOR, LocalDateTime.now());
+                baseImponible, iva, total, null, false, EstadoGasto.BORRADOR, LocalDateTime.now());
+    }
+
+    public static Gasto crearBorradorDesdeArchivo(Long usuarioId, String emisor, LocalDate fechaEmision,
+                                                    Dinero baseImponible, Dinero iva, Dinero total,
+                                                    String referenciaArchivo) {
+        return new Gasto(null, usuarioId, null, emisor, fechaEmision,
+                baseImponible, iva, total, referenciaArchivo, false, EstadoGasto.BORRADOR, LocalDateTime.now());
     }
 
     public void revisar(Long categoriaId, boolean deducible) {
@@ -69,6 +78,7 @@ public class Gasto {
     public Dinero getBaseImponible() { return baseImponible; }
     public Dinero getIva() { return iva; }
     public Dinero getTotal() { return total; }
+    public String getReferenciaArchivo() { return referenciaArchivo; }
     public boolean isDeducible() { return deducible; }
     public EstadoGasto getEstado() { return estado; }
     public LocalDateTime getCreadoEn() { return creadoEn; }

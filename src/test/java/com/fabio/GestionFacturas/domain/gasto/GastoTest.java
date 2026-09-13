@@ -49,6 +49,24 @@ class GastoTest {
         assertThat(gasto.getBaseImponible()).isEqualTo(base);
         assertThat(gasto.getIva()).isEqualTo(iva);
         assertThat(gasto.getTotal()).isEqualTo(total);
+        assertThat(gasto.getReferenciaArchivo()).isNull();
+    }
+
+    @Test
+    @DisplayName("crearBorradorDesdeArchivo guarda la referencia del archivo en un gasto BORRADOR")
+    void crearBorradorDesdeArchivoGuardaLaReferencia() {
+        // Arrange
+        Dinero total = new Dinero(new BigDecimal("121.00"), "EUR");
+
+        // Act
+        Gasto gasto = Gasto.crearBorradorDesdeArchivo(1L, "Proveedor SL", LocalDate.now(),
+                null, null, total, "uuid-referencia.pdf");
+
+        // Assert
+        assertThat(gasto.getReferenciaArchivo()).isEqualTo("uuid-referencia.pdf");
+        assertThat(gasto.getEstado()).isEqualTo(EstadoGasto.BORRADOR);
+        assertThat(gasto.getCategoriaId()).isNull();
+        assertThat(gasto.isDeducible()).isFalse();
     }
 
     @Test
@@ -100,6 +118,7 @@ class GastoTest {
                         base,                    // baseImponible
                         iva,                     // iva
                         total,                   // total
+                        null,                    // referenciaArchivo
                         false,                   // deducible
                         EstadoGasto.BORRADOR,    // estado
                         LocalDateTime.now()      // creadoEn

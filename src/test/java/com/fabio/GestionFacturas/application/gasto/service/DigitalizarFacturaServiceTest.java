@@ -63,6 +63,7 @@ class DigitalizarFacturaServiceTest {
         assertThat(resultado.getBaseImponible().cantidad()).isEqualByComparingTo(new BigDecimal("100.00"));
         assertThat(resultado.getIva().cantidad()).isEqualByComparingTo(new BigDecimal("21.00"));
         assertThat(resultado.getTotal().cantidad()).isEqualByComparingTo(new BigDecimal("121.00"));
+        assertThat(resultado.getReferenciaArchivo()).isEqualTo("uuid-referencia.pdf");
 
         verify(fileStoragePort).guardar(contenido, "factura.pdf", "application/pdf");
         verify(ocrPort).extraerTexto(contenido);
@@ -94,5 +95,6 @@ class DigitalizarFacturaServiceTest {
         assertThat(resultado.getEmisor()).isEqualTo("Proveedor SL");
         assertThat(resultado.getBaseImponible().cantidad()).isEqualByComparingTo(new BigDecimal("100.00"));
         assertThat(resultado.getTotal().cantidad()).isEqualByComparingTo(new BigDecimal("121.00"));
+        assertThat(resultado.getReferenciaArchivo()).isEqualTo("uuid-referencia.jpg");
     }
 }

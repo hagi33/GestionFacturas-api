@@ -25,6 +25,7 @@ public class GastoMapper {
                 extraerCantidad(gasto.getBaseImponible()),
                 extraerCantidad(gasto.getIva()),
                 extraerCantidad(gasto.getTotal()),
+                gasto.getReferenciaArchivo(),
                 moneda,
                 gasto.isDeducible(),
                 gasto.getEstado(),
@@ -44,6 +45,7 @@ public class GastoMapper {
                 construirDinero(entidad.getBaseImponible(), moneda),
                 construirDinero(entidad.getIva(), moneda),
                 construirDinero(entidad.getTotal(), moneda),
+                entidad.getReferenciaArchivo(),
                 entidad.isDeducible(),
                 entidad.getEstado(),
                 entidad.getCreadoEn()

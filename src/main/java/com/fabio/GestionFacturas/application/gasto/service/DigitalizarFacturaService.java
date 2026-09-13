@@ -32,8 +32,6 @@ public class DigitalizarFacturaService implements DigitalizarFacturaUseCase {
     @Override
     @Transactional
     public Gasto digitalizar(ComandoDigitalizarFactura comando) {
-        // La referencia se guarda en disco pero todavía no se persiste en el gasto:
-        // Gasto/la tabla gasto no tienen columna para ella (pendiente de una V4 + campo de dominio).
         String referencia = fileStoragePort.guardar(comando.contenido(), comando.nombreOriginal(), comando.contentType());
 
         String textoOcr = ocrPort.extraerTexto(comando.contenido());
@@ -55,8 +53,8 @@ public class DigitalizarFacturaService implements DigitalizarFacturaUseCase {
             total = Dinero.deEuros(datos.total());
         }
 
-        Gasto gasto = Gasto.crearBorrador(comando.usuarioId(), datos.emisor(), datos.fechaEmision(),
-                baseImponible, iva, total);
+        Gasto gasto = Gasto.crearBorradorDesdeArchivo(comando.usuarioId(), datos.emisor(), datos.fechaEmision(),
+                baseImponible, iva, total, referencia);
 
         return gastoRepositoryPort.guardar(gasto);
     }

@@ -34,6 +34,9 @@ public class GastoJpaEntity {
 
     private BigDecimal total;
 
+    @Column(name = "referencia_archivo")
+    private String referenciaArchivo;
+
     @Column(nullable = false)
     private String moneda;
 
@@ -53,7 +56,7 @@ public class GastoJpaEntity {
     }
 
     public GastoJpaEntity(Long id, Long usuarioId, Long categoriaId, String emisor, LocalDate fechaEmision,
-                            BigDecimal baseImponible, BigDecimal iva, BigDecimal total,
+                            BigDecimal baseImponible, BigDecimal iva, BigDecimal total, String referenciaArchivo,
                             String moneda, boolean deducible, EstadoGasto estado, LocalDateTime creadoEn) {
         this.id = id;
         this.usuarioId = usuarioId;
@@ -63,6 +66,7 @@ public class GastoJpaEntity {
         this.baseImponible = baseImponible;
         this.iva = iva;
         this.total = total;
+        this.referenciaArchivo = referenciaArchivo;
         this.moneda = moneda;
         this.deducible = deducible;
         this.estado = estado;
@@ -99,6 +103,10 @@ public class GastoJpaEntity {
 
     public BigDecimal getTotal() {
         return total;
+    }
+
+    public String getReferenciaArchivo() {
+        return referenciaArchivo;
     }
 
     public String getMoneda() {
