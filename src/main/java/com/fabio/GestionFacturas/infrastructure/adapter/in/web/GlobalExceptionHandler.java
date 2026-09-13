@@ -3,12 +3,14 @@ package com.fabio.GestionFacturas.infrastructure.adapter.in.web;
 import com.fabio.GestionFacturas.domain.gasto.GastoInvalidoException;
 import com.fabio.GestionFacturas.domain.usuario.CredencialesInvalidadException;
 import com.fabio.GestionFacturas.domain.usuario.EmailYaRegistradoException;
+import com.fabio.GestionFacturas.infrastructure.adapter.out.storage.FileStorageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +50,17 @@ public class GlobalExceptionHandler {
         Map<String, String> error = new HashMap<>();
         error.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);  // 401
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<Map<String, String>> handleFileStorage(FileStorageException ex){
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleTamanoMaximoExcedido(MaxUploadSizeExceededException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "El archivo supera el tamaño máximo permitido"));
     }
 }
 
