@@ -36,3 +36,7 @@ app:
   storage:
     local:
       base-path: ${STORAGE_BASE_PATH:./storage}
+  ocr:
+    tesseract:
+      datapath: ${TESSERACT_DATAPATH:}
+      language: ${TESSERACT_LANGUAGE:spa}
