@@ -4,6 +4,7 @@ import com.fabio.GestionFacturas.application.shared.port.out.OcrPort;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+//Ocr Adapter simulado cuando la app es ejecutada con un perfil distinto a ocr
 @Component
 @Profile("!ocr")
 public class MockOcrAdapter implements OcrPort {
