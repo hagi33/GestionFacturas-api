@@ -21,7 +21,8 @@ entender el dinero, y entregar ordenado al gestor.
 
 Freelances y autónomos individuales (desarrolladores, diseñadores, consultores,
 oficios...) que trabajan con un gestor externo. La app no sustituye al gestor: le da el
-trabajo ya ordenado.
+trabajo ya ordenado y al usuario de la misma le da una herramienta para tener organizadas las 
+facturas de sus clientes y los gastos que han podido tener.
 
 ## Stack tecnológico
 
