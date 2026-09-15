@@ -19,13 +19,17 @@ public class TesseractOcrAdapter implements OcrPort {
 
     private final ITesseract tesseract;
 
-    public TesseractOcrAdapter(@Value("${app.ocr.tesseract.datapath}") String datapath,
-                               @Value("${app.ocr.tesseract.language}") String language) {
+    public TesseractOcrAdapter(@Value("${app.ocr.tesseract.datapath:}") String datapath,
+                               @Value("${app.ocr.tesseract.language:spa}") String language) {
+
         Tesseract instance = new Tesseract();
-        instance.setDatapath(datapath);
+        if (datapath != null && !datapath.isBlank()){
+            instance.setDatapath(datapath);
+        }
         instance.setLanguage(language);
         this.tesseract = instance;
     }
+
 
     @Override
     public String extraerTexto(byte[] contenido) {
@@ -40,8 +44,13 @@ public class TesseractOcrAdapter implements OcrPort {
             throw new OcrException("Formato de archivo no soportado por OCR todavía (ej. PDF); solo imágenes por ahora");
         }
 
+
         try {
-            return tesseract.doOCR(imagen);
+            String texto = tesseract.doOCR(imagen);
+            System.out.println("=== TEXTO OCR ===");
+            System.out.println(texto);
+            System.out.println("=================");
+            return texto;
         } catch (TesseractException e) {
             throw new OcrException("Fallo al ejecutar OCR con Tesseract", e);
         }

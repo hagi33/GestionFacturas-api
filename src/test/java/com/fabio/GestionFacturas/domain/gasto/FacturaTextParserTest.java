@@ -184,4 +184,21 @@ class FacturaTextParserTest {
         assertThat(datos.iva()).isNull();
         assertThat(datos.total()).isNull();
     }
+
+    @Test
+    @DisplayName("extrae los importes de una factura con formato 'Etiqueta 100 EUR'")
+    void extraeImporteConSufijoEur(){
+        String texto = """
+                Base imponible: 100,00 EUR
+                IVA (21%): 21,00 EUR
+                TOTAL: 121,00 EUR
+                """;
+
+        DatosFacturaExtraidos datos = new FacturaTextParser().parsear(texto);
+
+        assertThat(datos.baseImponible()).isEqualByComparingTo("100.00");
+        assertThat(datos.iva()).isEqualByComparingTo("21.00");
+        assertThat(datos.total()).isEqualByComparingTo("121.00");
+
+    }
 }

@@ -13,7 +13,7 @@ public class FacturaTextParser {
     private static final Pattern PATRON_EMISOR = Pattern.compile("(?im)^\\s*Emisor\\s*:\\s*(.+)$");
     private static final Pattern PATRON_FECHA = Pattern.compile("(?im)^\\s*Fecha\\s*:\\s*(.+)$");
     private static final Pattern PATRON_BASE_IMPONIBLE = Pattern.compile("(?im)^\\s*Base imponible\\s*:\\s*(.+)$");
-    private static final Pattern PATRON_IVA = Pattern.compile("(?im)^\\s*IVA\\s*:\\s*(.+)$");
+    private static final Pattern PATRON_IVA = Pattern.compile("(?im)^\\s*IVA\\b.*?:\\s*(.+)$");
     private static final Pattern PATRON_TOTAL = Pattern.compile("(?im)^\\s*(?:Total|Importe total|A pagar)\\s*:\\s*(.+)$");
 
     private static final List<DateTimeFormatter> FORMATOS_FECHA = List.of(
@@ -77,9 +77,14 @@ public class FacturaTextParser {
     }
 
     private String normalizarImporte(String valorBruto) {
-        String limpio = valorBruto.replace("€", "").trim();
+        // Extrae solo el número (dígitos, puntos y comas), descartando "EUR", "€", texto
+        Matcher matcher = Pattern.compile("[0-9][0-9.,]*").matcher(valorBruto);
+        if (!matcher.find()){
+            return "";
+        }
+        String limpio = matcher.group();
 
-        if (limpio.contains(",")) {
+        if (limpio.contains(",")){
             limpio = limpio.replace(".", "");
             limpio = limpio.replace(",", ".");
         }
