@@ -10,6 +10,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
+/**
+ * Implements {@link FileStoragePort} on the local filesystem — today's only storage adapter
+ * (a MinIO-backed one is planned as a drop-in replacement). {@code guardar} is called from
+ * {@code DigitalizarFacturaService} as the first step of the OCR pipeline.
+ */
 @Component
 public class LocalStorageAdapter implements FileStoragePort {
 
@@ -30,6 +35,7 @@ public class LocalStorageAdapter implements FileStoragePort {
 
     @Override
     public String guardar(byte[] contenido, String nombreOriginal, String contentType) {
+        // The reference handed back and stored on the Gasto is a random filename, never the original one
         String referencia = UUID.randomUUID() + extraerExtension(nombreOriginal);
         Path destino = basePath.resolve(referencia);
 

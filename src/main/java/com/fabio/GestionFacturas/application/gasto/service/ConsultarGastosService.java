@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/** Implements the read-side {@link ConsultarGastosUseCase}, backed by {@link GastoRepositoryPort}. */
 @Service
-public class ConsultarGastosService implements ConsultarGastosUseCase {
+public class
+ConsultarGastosService implements ConsultarGastosUseCase {
 
 
     private final GastoRepositoryPort gastoRepository;
@@ -20,7 +22,7 @@ public class ConsultarGastosService implements ConsultarGastosUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true) // hints the DB driver/JPA no dirty-checking or write locks are needed
     public List<Gasto> listarPorUsuario(Long usuarioId) {
         return gastoRepository.buscarPorUsuario(usuarioId);
     }
@@ -32,6 +34,7 @@ public class ConsultarGastosService implements ConsultarGastosUseCase {
         if (gasto.isEmpty()){
             return Optional.empty();
         }
+        // Access control: a gasto that exists but belongs to someone else is reported as absent, not forbidden
         if (!gasto.get().getUsuarioId().equals(usuarioId)){
             return Optional.empty();
         }

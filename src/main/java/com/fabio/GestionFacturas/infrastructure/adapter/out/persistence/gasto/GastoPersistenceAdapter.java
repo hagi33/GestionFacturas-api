@@ -8,6 +8,12 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Implements the outbound {@link GastoRepositoryPort} with Spring Data JPA — the piece the
+ * application layer never sees directly. Full round trip for a write:
+ * domain Gasto -> GastoMapper -> GastoJpaEntity -> GastoJpaRepository (Spring Data) -> DB,
+ * then mapped straight back to domain before returning, so callers never touch the JPA type.
+ */
 @Component
 public class GastoPersistenceAdapter implements GastoRepositoryPort {
 

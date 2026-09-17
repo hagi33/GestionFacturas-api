@@ -9,6 +9,10 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
+/**
+ * Persistence model for RefreshToken. {@code tokenHash} is unique so a lookup by hash
+ * (see {@code RefreshTokenJpaRepository}) is a direct indexed match, not a scan.
+ */
 @Entity
 @Table(name = "refresh_token")
 public class RefreshTokenJpaEntity {
@@ -32,6 +36,7 @@ public class RefreshTokenJpaEntity {
     @Column(name = "creado_en", insertable = false, updatable = false)
     private LocalDateTime creadoEn;
 
+    /** No-args constructor required by JPA/Hibernate. */
     protected RefreshTokenJpaEntity() {
     }
 

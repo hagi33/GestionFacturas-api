@@ -6,6 +6,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+/**
+ * Implements {@link UsuarioRepositoryPort} with Spring Data JPA. Used by
+ * {@code RegistrarUsuarioService} (save), {@code AutenticarService} (lookup by email),
+ * and {@code RefreshTokenService} (lookup by id).
+ */
 @Component
 public class UsuarioPersistenceAdapter implements UsuarioRepositoryPort {
 

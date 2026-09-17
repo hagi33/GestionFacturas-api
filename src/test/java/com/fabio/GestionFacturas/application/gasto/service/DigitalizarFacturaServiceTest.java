@@ -21,6 +21,11 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for DigitalizarFacturaService with all four collaborators mocked
+ * (FileStoragePort, OcrPort, FacturaTextParser, GastoRepositoryPort) — verifies the service
+ * wires the OCR pipeline steps together correctly without touching real storage/OCR/DB.
+ */
 @ExtendWith(MockitoExtension.class)
 class DigitalizarFacturaServiceTest {
 

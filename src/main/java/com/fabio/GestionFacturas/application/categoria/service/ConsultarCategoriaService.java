@@ -9,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Implements {@link ConsultarCategoriaUseCase}. Straightforward pass-through to the repository
+ * port — a good minimal example of the controller -> use-case-port -> service -> repo-port -> adapter chain.
+ */
 @Service
 public class ConsultarCategoriaService implements ConsultarCategoriaUseCase {
 

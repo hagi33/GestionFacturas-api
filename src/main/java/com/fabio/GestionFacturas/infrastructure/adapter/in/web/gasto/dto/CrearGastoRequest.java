@@ -6,6 +6,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/** Request DTO for manual expense creation — the web contract, never the domain Gasto itself. */
 public record CrearGastoRequest(
         String emisor,
         LocalDate fechaEmision,

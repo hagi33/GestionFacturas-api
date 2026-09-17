@@ -15,6 +15,13 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * Implements {@link AutenticarUseCase} (login), depending on five outbound ports:
+ * {@code UsuarioRepositoryPort} (look up the account), {@code PasswordEncoder} (BCrypt,
+ * a Spring Security bean rather than a custom port), {@code TokenGeneradorPort} (issue the
+ * JWT), and {@code RefreshTokenGeneradorPort} + {@code RefreshTokenRepositoryPort} (issue and
+ * persist the refresh token). {@code AuthController} is the only caller.
+ */
 @Service
 public class AutenticarService implements AutenticarUseCase {
 
@@ -61,6 +68,7 @@ public class AutenticarService implements AutenticarUseCase {
         String refreshTokenHash = refreshTokenGeneradorPort.hashear(refreshTokenPlano);
         LocalDateTime expiraEn = refreshTokenGeneradorPort.calcularExpiracion();
 
+        // Only the hash is persisted; the plain token is returned to the caller once and never stored
         RefreshToken refreshToken = new RefreshToken(false, null, usuario.getId(), refreshTokenHash, expiraEn, null);
         refreshTokenRepositoryPort.guardar(refreshToken);
 

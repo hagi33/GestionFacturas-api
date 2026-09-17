@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
+/** Unit tests for LogoutService: revocation happens on a found token, silent no-op on an unknown one. */
 @ExtendWith(MockitoExtension.class)
 class LogoutServiceTest {
 

@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Turns raw OCR text into structured invoice fields. Framework-free by design (pure domain
+ * logic) so it stays unit-testable without Spring/Tesseract; OCR itself only produces text,
+ * never parses it — see {@code OcrPort} in the application layer.
+ */
 public class FacturaTextParser {
 
     private static final Pattern PATRON_EMISOR = Pattern.compile("(?im)^\\s*Emisor\\s*:\\s*(.+)$");
@@ -22,6 +27,7 @@ public class FacturaTextParser {
             DateTimeFormatter.ofPattern("dd-MM-yyyy")
     );
 
+    /** Best-effort extraction: any field the regex can't find comes back null, never throws. */
     public DatosFacturaExtraidos parsear(String textoOcr) {
         if (textoOcr == null) {
             return new DatosFacturaExtraidos(null, null, null, null, null);
@@ -50,6 +56,7 @@ public class FacturaTextParser {
             return null;
         }
 
+        // OCR output isn't consistent about date format, so try each supported one in turn
         for (DateTimeFormatter formato : FORMATOS_FECHA) {
             try {
                 return LocalDate.parse(valor, formato);

@@ -2,6 +2,7 @@ package com.fabio.GestionFacturas.infrastructure.adapter.out.persistence.usuario
 
 import com.fabio.GestionFacturas.domain.usuario.RefreshToken;
 
+/** Converts between domain {@link RefreshToken} and {@link RefreshTokenJpaEntity}; used only by {@code RefreshTokenPersistenceAdapter}. */
 public class RefreshTokenMapper {
 
     public RefreshTokenMapper() {

@@ -19,6 +19,11 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.*;
 
 
+/**
+ * Unit tests for CrearGastoService with the outbound port mocked ({@code GastoRepositoryPort})
+ * — verifies the service's own logic (Dinero conversion, EUR default) in isolation from any real
+ * persistence adapter, per the project's "mock the ports" testing convention.
+ */
 @ExtendWith(MockitoExtension.class)
 class CrearGastoServiceTest {
 

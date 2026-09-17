@@ -1,5 +1,6 @@
 package com.fabio.GestionFacturas.domain.gasto;
 
+/** Lifecycle states a Gasto moves through, from OCR/manual entry to being handed to the accountant. */
 public enum EstadoGasto {
 
     BORRADOR, //Gasto recién llegado, aún sin revisar

@@ -26,6 +26,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Web adapter (inbound) for expenses. Depends only on the three inbound use-case ports below —
+ * never on the services or repositories behind them. {@code GastoWebMapper} converts between
+ * request/response DTOs and domain objects, so a {@link Gasto} never crosses the HTTP boundary directly.
+ * {@code usuarioId} always comes from {@code @AuthenticationPrincipal}, set by {@code JwtAuthenticationFilter}
+ * from the validated JWT — it's never trusted from the request body/params.
+ */
 @RestController
 @RequestMapping("/api/gastos")
 public class GastoController {
@@ -44,6 +51,7 @@ public class GastoController {
         this.digitalizarFacturaUseCase = digitalizarFacturaUseCase;
     }
 
+    // request DTO -> command -> CrearGastoUseCase (port) -> CrearGastoService -> domain Gasto -> response DTO
     @PostMapping
     public ResponseEntity<GastoResponse> crear(@Valid @RequestBody CrearGastoRequest request,
                                                @AuthenticationPrincipal Long usuarioId) {
@@ -81,6 +89,8 @@ public class GastoController {
             throw new IllegalArgumentException("Tipo de archivo no soportado: " + contentType);
         }
 
+        // MultipartFile is a framework type — converted to byte[] right here, since application
+        // ports must never depend on Spring MVC types (see ComandoDigitalizarFactura's Javadoc).
         byte[] contenido;
         try {
             contenido = archivo.getBytes();
@@ -91,6 +101,7 @@ public class GastoController {
         ComandoDigitalizarFactura comando = new ComandoDigitalizarFactura(
                 usuarioId, contenido, archivo.getOriginalFilename(), contentType);
 
+        // Kicks off the full OCR pipeline in DigitalizarFacturaService (storage -> OCR -> parse -> save)
         Gasto gasto = digitalizarFacturaUseCase.digitalizar(comando);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(GastoWebMapper.aRespuesta(gasto));

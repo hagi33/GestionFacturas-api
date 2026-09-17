@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
+/** Unit tests for RefreshTokenService, covering the three ways a refresh token can be rejected: not found, revoked, expired. */
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceTest {
 

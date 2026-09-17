@@ -13,11 +13,12 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 
+/** Implements {@link RefreshTokenGeneradorPort}: cryptographically random tokens, hashed for storage. */
 @Component
 public class RefreshTokenGenerador implements RefreshTokenGeneradorPort {
 
-    private static final int LONGITUD_TOKEN_BYTES = 32;
-    private static final String ALGORITMO_HASH = "SHA-256";
+    private static final int LONGITUD_TOKEN_BYTES = 32; // 256 bits of entropy
+    private static final String ALGORITMO_HASH = "SHA-256"; // deterministic (unlike BCrypt) so it can be looked up by hash
 
     private final SecureRandom secureRandom = new SecureRandom();
     private final long refreshExpirationMs;

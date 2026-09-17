@@ -9,6 +9,10 @@ import static org.assertj.core.api.Assertions.*;
 
 
 
+/**
+ * Unit tests for JwtTokenProvider, constructed directly (no Spring context, no mocks needed —
+ * it has no port dependencies of its own). Covers the generate/validate/extract round trip.
+ */
 class JwtTokenProviderTest {
 
     private static final String SECRET =
@@ -53,6 +57,7 @@ class JwtTokenProviderTest {
     @DisplayName("un token caducado se rechaza")
     void tokenCaducadoNoEsValido(){
 
+        // Negative expiration forces the token to be already expired the instant it's generated
         JwtTokenProvider providerCaducado = new JwtTokenProvider(SECRET, -10L);
         String token = providerCaducado.generarAccessToken(1L, "fabio@test.com");
 

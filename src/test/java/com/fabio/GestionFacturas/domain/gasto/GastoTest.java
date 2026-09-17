@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 
+/** Unit tests for Gasto's factories and invariants — pure domain, no mocks needed. Arrange/Act/Assert sections + @DisplayName cover intent per test. */
 class GastoTest {
 
 

@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 
+/** Unit tests for RegistrarUsuarioService: duplicate-email rejection and that only the BCrypt hash ever gets saved. */
 @ExtendWith(MockitoExtension.class)
 class RegistrarUsuarioServiceTest {
 

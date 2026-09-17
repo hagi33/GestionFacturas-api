@@ -7,6 +7,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Persistence model for Gasto — a plain JPA entity, separate from the domain {@link
+ * com.fabio.GestionFacturas.domain.gasto.Gasto}. {@code GastoMapper} converts between the two;
+ * this class never leaves the persistence adapter. {@code @Enumerated(STRING)} stores
+ * {@code estado} as readable text in the DB instead of an ordinal, so column values survive
+ * enum reordering.
+ */
 @Entity
 @Table(name = "gasto")
 public class GastoJpaEntity {
@@ -37,6 +44,7 @@ public class GastoJpaEntity {
     @Column(name = "referencia_archivo")
     private String referenciaArchivo;
 
+    // One shared currency column for all three Dinero amounts (base/iva/total) — see GastoMapper
     @Column(nullable = false)
     private String moneda;
 
@@ -50,6 +58,7 @@ public class GastoJpaEntity {
     @Column(name = "creado_en", nullable = false)
     private LocalDateTime creadoEn;
 
+    /** No-args constructor required by JPA/Hibernate to instantiate entities via reflection. */
     public GastoJpaEntity() {
 
 

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
+/** Implements {@link CategoriaRepositoryPort} with Spring Data JPA — see {@code CategoriaController} for the full inbound chain. */
 @Component
 public class CategoriaPersistenceAdapter implements CategoriaRepositoryPort {
 

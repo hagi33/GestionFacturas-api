@@ -4,6 +4,11 @@ import com.fabio.GestionFacturas.domain.gasto.FacturaTextParser;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Registers plain domain classes as Spring beans so they can be constructor-injected
+ * (e.g. into {@code DigitalizarFacturaService}) without the domain itself depending on Spring —
+ * {@link FacturaTextParser} has no {@code @Component}, staying a framework-free POJO.
+ */
 @Configuration
 public class DomainBeansConfig {
 

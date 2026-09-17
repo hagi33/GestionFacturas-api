@@ -3,6 +3,11 @@ package com.fabio.GestionFacturas.domain.shared;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+/**
+ * Value object wrapping a monetary amount + ISO currency code, so money is never a bare BigDecimal.
+ * The compact constructor below runs on every instance (including record deserialization),
+ * enforcing invariants (max 2 decimals, valid 3-letter currency) at construction time.
+ */
 public record Dinero(BigDecimal cantidad, String moneda) {
 
     public Dinero {

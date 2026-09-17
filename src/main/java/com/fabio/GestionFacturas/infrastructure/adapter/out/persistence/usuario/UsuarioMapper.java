@@ -2,6 +2,7 @@ package com.fabio.GestionFacturas.infrastructure.adapter.out.persistence.usuario
 
 import com.fabio.GestionFacturas.domain.usuario.Usuario;
 
+/** Converts between domain {@link Usuario} and {@link UsuarioJpaEntity}; used only by {@code UsuarioPersistenceAdapter}. */
 public class UsuarioMapper {
 
     public UsuarioMapper() {

@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
+/** Persistence model for Usuario — mapped to/from the domain object by {@code UsuarioMapper}. */
 @Entity
 @Table(name = "usuario")
 public class UsuarioJpaEntity {
@@ -20,15 +21,18 @@ public class UsuarioJpaEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    // Column named "password" but always holds the BCrypt hash — the raw password never reaches this class
     @Column(name = "password", nullable = false)
     private String password;
 
     @Column(nullable = false)
     private String nombre;
 
+    // insertable/updatable = false: set once by a DB default, never written from the Java side
     @Column(name = "creado_en", insertable = false, updatable = false)
     private LocalDateTime creadoEn;
 
+    /** No-args constructor required by JPA/Hibernate. */
     protected UsuarioJpaEntity() {
     }
 

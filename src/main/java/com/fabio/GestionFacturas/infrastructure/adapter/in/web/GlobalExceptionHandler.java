@@ -15,6 +15,11 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Translates domain/validation exceptions into HTTP responses — the one place that does this
+ * mapping. The domain layer only ever throws plain exceptions and never knows about HTTP status
+ * codes; {@code @RestControllerAdvice} intercepts them across every controller automatically.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

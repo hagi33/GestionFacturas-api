@@ -24,6 +24,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
+/**
+ * Unit tests for AutenticarService (login) with all five ports/collaborators mocked.
+ * Failure cases assert {@code verify(..., never())} on the refresh-token save, confirming
+ * a rejected login never has the side effect of persisting a token.
+ */
 @ExtendWith(MockitoExtension.class)
 class AutenticarServiceTest {
 

@@ -6,6 +6,10 @@ import com.fabio.GestionFacturas.domain.shared.Dinero;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.gasto.dto.CrearGastoRequest;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.gasto.dto.GastoResponse;
 
+/**
+ * Converts between web DTOs and the domain {@link Gasto} — the boundary that keeps the
+ * three models (DTO / domain / JPA entity) separate. Static/stateless: no port dependency, pure mapping.
+ */
 public class GastoWebMapper {
 
     public GastoWebMapper() {
@@ -48,6 +52,8 @@ public class GastoWebMapper {
         return dinero.cantidad();
     }
 
+    // Response has one top-level "moneda" field even though each Dinero carries its own currency;
+    // falls back through total -> base -> EUR since a fresh BORRADOR may have neither amount yet.
     private static String extraerMoneda(Gasto gasto) {
         Dinero total = gasto.getTotal();
         if (total != null) {

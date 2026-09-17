@@ -15,6 +15,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Runs once per request (before it reaches any controller), reading the Bearer token and,
+ * if valid, populating the {@code SecurityContext} so {@code @AuthenticationPrincipal Long usuarioId}
+ * works in controllers. Registered in {@link com.fabio.GestionFacturas.infrastructure.config.SecurityConfig}
+ * ahead of Spring's default filter. No token, or an invalid one, just falls through unauthenticated —
+ * it's {@code anyRequest().authenticated()} in SecurityConfig that then rejects the request.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -46,6 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         Long usuarioId = jwtTokenProvider.extraerUsuarioId(token);
 
+        // The principal is just the user id (Long) — no roles/authorities used in this app, hence List.of()
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 usuarioId, null, List.of());
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

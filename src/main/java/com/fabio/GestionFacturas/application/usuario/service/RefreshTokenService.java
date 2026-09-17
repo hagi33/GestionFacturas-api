@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Implements {@link RefreshTokenUseCase}: exchanges a valid refresh token for a fresh access
+ * token, without issuing a new refresh token (no rotation — see the port's Javadoc).
+ * Client presents the raw token; it's re-hashed here to look it up (never stored/compared in the clear).
+ */
 @Service
 public class RefreshTokenService implements RefreshTokenUseCase {
 

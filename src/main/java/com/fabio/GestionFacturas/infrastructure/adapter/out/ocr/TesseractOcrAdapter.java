@@ -13,12 +13,18 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+/**
+ * Real implementation of {@link OcrPort}, backed by Tess4J/Tesseract. Only active when the
+ * "ocr" Spring profile is enabled (see {@code MockOcrAdapter} for the default). Images only for
+ * now — PDF support is a pending follow-up (PDFBox is already available for it).
+ */
 @Component
 @Profile("ocr")
 public class TesseractOcrAdapter implements OcrPort {
 
     private final ITesseract tesseract;
 
+    // datapath/language come from config, never hardcoded, so this works across machines/deployments
     public TesseractOcrAdapter(@Value("${app.ocr.tesseract.datapath:}") String datapath,
                                @Value("${app.ocr.tesseract.language:spa}") String language) {
 

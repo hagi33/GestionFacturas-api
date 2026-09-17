@@ -2,6 +2,7 @@ package com.fabio.GestionFacturas.infrastructure.adapter.in.web.usuario.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+/** Login request DTO. */
 public record LoginRequest(
 
         @NotBlank String email,
