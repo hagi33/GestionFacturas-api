@@ -1,11 +1,12 @@
 # GestionFacturas — Control económico para autónomos
 
-> **Proyecto en desarrollo activo.** Este README describe el estado actual y la
+> ⚠️ **Proyecto en desarrollo activo.** Este README describe el estado actual y la
 > dirección del proyecto, y evoluciona con él.
 
 Aplicación para que **freelances y autónomos individuales** lleven el control de su
-actividad económica: registran sus **gastos** (e ingresos y clientes en fases futuras),
-digitalizan facturas con OCR, y las mantienen ordenadas para entregar al gestor.
+actividad económica: registran sus **gastos**, sus **ingresos** y sus **clientes**,
+digitalizan facturas con OCR, y lo mantienen ordenado para entregar al gestor. El objetivo
+final es dar visión de beneficio y rentabilidad por cliente.
 
 Principio rector: **organización y visibilidad, nunca asesoría fiscal ni facturación
 oficial**. La app registra y reporta; no calcula la declaración ni emite facturas legales.
@@ -13,16 +14,14 @@ oficial**. La app registra y reporta; no calcula la declaración ni emite factur
 ## El problema que resuelve
 
 Gestionar la contabilidad siendo autónomo es un caos manual: facturas desperdigadas,
-datos tecleados a mano, y un desastre que ordenar cada trimestre. La app ataca ese dolor
+ingresos sin controlar, y un desastre que ordenar cada trimestre. La app ataca ese dolor
 siendo fuerte en cuatro cosas: capturar sin esfuerzo (foto -> datos), no perder nada,
-entender el dinero, y entregar ordenado al gestor.
+entender el dinero (qué entra, qué sale, cuánto queda, por cliente), y entregar ordenado.
 
 ## Público objetivo
 
-Freelances y autónomos individuales (desarrolladores, diseñadores, consultores,
-oficios...) que trabajan con un gestor externo. La app no sustituye al gestor: le da el
-trabajo ya ordenado y al usuario de la misma le da una herramienta para tener organizadas las 
-facturas de sus clientes y los gastos que han podido tener.
+Freelances y autónomos individuales que trabajan con un gestor externo. La app no sustituye
+al gestor: le da el trabajo ya ordenado.
 
 ## Stack tecnológico
 
@@ -33,17 +32,17 @@ facturas de sus clientes y los gastos que han podido tener.
 | Base de datos | PostgreSQL |
 | Migraciones | Flyway |
 | Seguridad | Spring Security + JWT (access + refresh revocable) |
-| OCR | Tesseract vía Tess4J (idioma español); mock para desarrollo/tests |
+| OCR | Tesseract vía Tess4J (español); mock para desarrollo/tests |
 | Almacenamiento de archivos | Sistema de archivos local (MinIO planificado) |
 | Documentación API | OpenAPI / Swagger (springdoc 3.x) |
 | Build | Maven |
 | Tests | JUnit 5 + Mockito + AssertJ |
 | Entorno | Docker Compose (PostgreSQL) |
-| Cliente | Kotlin KMP *(planificado)* |
+| Cliente | Kotlin Multiplatform (KMP) con Compose Multiplatform *(planificado; móvil + escritorio)* |
 
 ## Arquitectura
 
-Arquitectura **hexagonal (puertos y adaptadores)**, en tres capas con las dependencias
+Arquitectura **hexagonal (puertos y adaptadores)**, tres capas con las dependencias
 apuntando siempre hacia el dominio:
 
 - **domain** — núcleo de negocio. POJOs puros, sin Spring ni JPA.
@@ -52,7 +51,8 @@ apuntando siempre hacia el dominio:
 
 **Regla de dependencia:** `infrastructure` conoce `application`, que conoce `domain`. El
 dominio no conoce a nadie. La aplicación **define** los puertos; la infraestructura los
-**implementa**.
+**implementa**. Para cada entidad hay tres modelos separados (DTO / dominio / entidad JPA)
+con mappers entre ellos.
 
 ```mermaid
 flowchart TB
@@ -61,14 +61,14 @@ flowchart TB
         subgraph APP["APLICACION - casos de uso + puertos"]
             direction TB
             subgraph DOM["DOMINIO - POJOs puros"]
-                D1["Gasto - Dinero - Usuario<br/>Categoria - FacturaTextParser"]
+                D1["Gasto - Cliente - Usuario<br/>Dinero - FacturaTextParser"]
             end
-            PIN["Puertos IN<br/>CrearGasto - ConsultarGastos<br/>DigitalizarFactura - Autenticar"]
+            PIN["Puertos IN<br/>(gasto, cliente, usuario)"]
             SVC["Servicios (impl)"]
-            POUT["Puertos OUT<br/>GastoRepository - Ocr<br/>FileStorage - TokenGenerador"]
+            POUT["Puertos OUT<br/>Repository - Ocr - FileStorage<br/>TokenGenerador"]
         end
-        AIN["Adaptadores IN<br/>GastoController - AuthController"]
-        AOUT["Adaptadores OUT<br/>JPA - Tesseract/Mock OCR<br/>LocalStorage - JwtTokenProvider"]
+        AIN["Adaptadores IN (controllers REST)"]
+        AOUT["Adaptadores OUT<br/>JPA - Tesseract/Mock - LocalStorage - Jwt"]
     end
 
     AIN --> PIN
@@ -87,64 +87,41 @@ flowchart TB
     class AOUT adout
 ```
 
-Para cada entidad hay **tres modelos separados** a propósito: DTO (contrato de la API),
-modelo de dominio (negocio) y entidad JPA (persistencia). Los mappers traducen entre ellos.
+## Módulos de dominio
 
-## Flujo de datos
-
-### Digitalizar una factura (Fase 1)
-
-```
-POST /api/gastos/digitalizar  (multipart: imagen de factura)
-   │
-   ▼
-GastoController          (adaptador IN — MultipartFile -> byte[])
-   ▼
-DigitalizarFacturaUseCase   (puerto IN)
-   ▼
-DigitalizarFacturaService   (orquesta):
-   ├─► FileStoragePort ────► almacena el archivo, devuelve referencia
-   ├─► OcrPort ────────────► Tesseract extrae el texto (o mock)
-   ├─► FacturaTextParser ──► texto -> campos (emisor, fecha, importes)
-   └─► GastoRepositoryPort ► guarda el Gasto en BORRADOR
-   ▼
-Gasto en BORRADOR (el usuario revisa y completa lo que el OCR no pilló)
-```
-
-### Login
-
-```
-POST /api/auth/login
-   ▼
-AutenticarService: busca usuario -> BCrypt.matches -> genera access + refresh token
-   ▼
-devuelve access token (15 min) + refresh token (7 días, hash guardado en BD)
-```
+- **gasto** — gastos del autónomo. Creación manual o por digitalización (OCR). Estado
+  (borrador/revisado), deducible, referencia al archivo original.
+- **cliente** — personas/empresas a las que factura el usuario. Nombre, NIF, email,
+  teléfono. NIF único por usuario. Soft delete (campo `activo`): "borrar" desactiva, no
+  elimina, para preservar la integridad con las facturas asociadas.
+- **usuario** — identidad y autenticación (registro, login, refresh tokens).
+- **ingreso** — *(Fase 2, en construcción)* facturas emitidas a clientes, con estado de
+  cobro.
+- **shared** — `Dinero` (objeto de valor).
 
 ## Seguridad
 
-- Contraseñas hasheadas con **BCrypt**.
-- Autenticación **JWT**: access token corto + refresh token revocable (hash en BD).
-- Logout real: revoca el refresh token en BD. Rotación de tokens: pendiente (roadmap).
+- Contraseñas con **BCrypt**. Autenticación **JWT**: access token corto + refresh token
+  revocable (hash SHA-256 en BD). Logout real. Rotación de tokens: pendiente.
 - El usuario autenticado se obtiene en los controllers con `@AuthenticationPrincipal`.
+  Control de acceso por `usuarioId` en todas las consultas: un usuario solo ve sus datos.
+
+## Digitalización (OCR)
+
+Subes una imagen de factura -> se almacena -> Tesseract extrae el texto -> `FacturaTextParser`
+saca los campos (emisor, fecha, importes) -> se crea el gasto en BORRADOR para que el
+usuario revise. El OCR real se activa con el perfil `ocr`; por defecto se usa un mock.
+Pendiente: soporte de PDF (ahora solo imágenes), extracción del emisor, OCR asíncrono.
 
 ## Estado actual
 
-**Fase 0 — Fundamentos** ✅ cerrada y testeada
-- Dominio, casos de uso y persistencia de gasto/categoría/usuario, controllers, manejo de
-  errores, Flyway, Docker, tests unitarios de dominio y servicios.
-
-**Seguridad (JWT)** ✅ implementada
-- Registro, login (TDD), JwtTokenProvider, filtro de autenticación, SecurityConfig
-  endurecida, refresh tokens revocables (`/refresh`, `/logout`).
-- Pendiente: rotación de refresh tokens (reuse detection).
-
-**Fase 1 — Digitalización (OCR)** ✅ funcional
-- Almacenamiento de archivos local, OCR con Tesseract (español) + mock por perfil,
-  parser de facturas (importes y fecha), endpoint de subida, referencia del archivo
-  guardada en el gasto.
-- Pendiente/mejora: soporte de PDF (ahora solo imágenes), extracción del emisor,
-  procesamiento asíncrono del OCR, migrar almacenamiento a MinIO.
+- **Fase 0 — Fundamentos** ✅ cerrada y testeada.
+- **Seguridad (JWT)** ✅ implementada (falta rotación de refresh tokens).
+- **Fase 1 — Digitalización (OCR)** ✅ funcional (falta PDF, emisor, async, MinIO).
+- **Fase 2 — Ingresos y clientes** 🚧 en construcción:
+  - [x] Módulo **cliente** (CRUD + soft delete, reglas construidas con TDD)
+  - [ ] Módulo **ingreso** (con estado de cobro, digitalización por OCR)
+  - [ ] Ligar gastos e ingresos a clientes (rentabilidad por cliente)
 
 ## Roadmap
 
@@ -152,35 +129,29 @@ devuelve access token (15 min) + refresh token (7 días, hash guardado en BD)
 |------|------|
 | Fase 0 | Backend en pie, CRUD de gasto (hecho) |
 | Seguridad | Autenticación JWT completa (hecho; falta rotación) |
-| Fase 1 | OCR + almacenamiento de archivos (hecho; falta PDF, emisor, async, MinIO) |
-| Fase 2 | Ingresos y clientes |
+| Fase 1 | OCR + almacenamiento de archivos (hecho; faltan mejoras) |
+| Fase 2 | Ingresos y clientes (en curso; cliente hecho) |
 | Fase 3 | Dashboard: beneficio por periodo, rentabilidad por cliente, pendientes de cobro |
 | Fase 4 | Exportación al gestor, pulido, despliegue |
+| Cliente | App KMP (móvil + escritorio) consumiendo la API |
 | v1+ | Duplicados, recurrentes, presupuestos, categorización automática... |
 
 ## Cómo arrancar (desarrollo)
 
-**Requisitos:** Java 21, Docker, Maven. Para OCR real: Tesseract instalado con el idioma
-español (`spa`).
+**Requisitos:** Java 21, Docker, Maven. Para OCR real: Tesseract con el idioma español.
 
 ```bash
-# 1. Levantar PostgreSQL
-docker compose up -d
-
-# 2. Variables de entorno (ver .env.example): credenciales BD, JWT_SECRET,
-#    y la ruta de tessdata para OCR.
-
-# 3. Arrancar
-./mvnw spring-boot:run
+docker compose up -d                 # PostgreSQL
+cp .env.example .env                 # y rellenar (BD, JWT_SECRET, ruta tessdata)
+./mvnw spring-boot:run               # arranca (mock OCR por defecto)
 ```
 
-- **Modo desarrollo (mock OCR):** arranca sin perfil especial; el OCR devuelve texto
-  simulado, no requiere Tesseract.
-- **Modo OCR real:** arranca con el perfil `ocr` activo
-  (`SPRING_PROFILES_ACTIVE=ocr`) y la ruta de `tessdata` configurada. El OCR usa Tesseract.
+- **Modo mock OCR:** arranque normal, no requiere Tesseract.
+- **Modo OCR real:** perfil `ocr` activo (`SPRING_PROFILES_ACTIVE=ocr`) + ruta de tessdata
+  configurada.
 
 API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.html`
-(con botón "Authorize" para el token JWT).
+(botón "Authorize" para el token JWT).
 
 ## Tests
 
@@ -188,15 +159,14 @@ API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.
 ./mvnw test
 ```
 
-Tests unitarios de dominio (`Dinero`, `Gasto`, `FacturaTextParser`), de servicios (con
-Mockito) y del generador de tokens. El login y el parser se trabajaron con TDD. Los tests
-usan el mock de OCR, nunca Tesseract real.
+Tests unitarios de dominio y servicios (JUnit 5 + Mockito + AssertJ). El login, el parser
+de facturas y las reglas del módulo cliente (NIF duplicado, soft delete) se construyeron
+con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
 
 ## Variables de entorno
 
-Ver `.env.example`. Principales: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`,
-`SERVER_PORT`, y la ruta de datos de Tesseract para OCR. Nunca subir el `.env` real ni la
-clave JWT a Git.
+Ver `.env.example`: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `SERVER_PORT`, y
+la ruta de datos de Tesseract. Nunca subir el `.env` real ni la clave JWT a Git.
 
 ---
 
