@@ -39,7 +39,7 @@ facturas de sus clientes y los gastos que han podido tener.
 | Build | Maven |
 | Tests | JUnit 5 + Mockito + AssertJ |
 | Entorno | Docker Compose (PostgreSQL) |
-| Cliente | Flutter *(planificado)* |
+| Cliente | Kotlin KMP *(planificado)* |
 
 ## Arquitectura
 
