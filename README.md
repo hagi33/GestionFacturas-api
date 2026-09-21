@@ -6,7 +6,7 @@
 Aplicación para que **freelances y autónomos individuales** lleven el control de su
 actividad económica: registran sus **gastos**, sus **ingresos** y sus **clientes**,
 digitalizan facturas con OCR, y lo mantienen ordenado para entregar al gestor. El objetivo
-final es dar visión de beneficio y rentabilidad por cliente.
+es dar visión de beneficio y de rentabilidad por cliente.
 
 Principio rector: **organización y visibilidad, nunca asesoría fiscal ni facturación
 oficial**. La app registra y reporta; no calcula la declaración ni emite facturas legales.
@@ -14,9 +14,10 @@ oficial**. La app registra y reporta; no calcula la declaración ni emite factur
 ## El problema que resuelve
 
 Gestionar la contabilidad siendo autónomo es un caos manual: facturas desperdigadas,
-ingresos sin controlar, y un desastre que ordenar cada trimestre. La app ataca ese dolor
-siendo fuerte en cuatro cosas: capturar sin esfuerzo (foto -> datos), no perder nada,
-entender el dinero (qué entra, qué sale, cuánto queda, por cliente), y entregar ordenado.
+ingresos sin controlar, cobros que se pierden de vista, y un desastre que ordenar cada
+trimestre. La app ataca ese dolor siendo fuerte en cuatro cosas: capturar sin esfuerzo
+(foto -> datos), no perder nada, entender el dinero (qué entra, qué sale, cuánto queda,
+quién me debe, por cliente), y entregar ordenado al gestor.
 
 ## Público objetivo
 
@@ -38,7 +39,7 @@ al gestor: le da el trabajo ya ordenado.
 | Build | Maven |
 | Tests | JUnit 5 + Mockito + AssertJ |
 | Entorno | Docker Compose (PostgreSQL) |
-| Cliente | Kotlin Multiplatform (KMP) con Compose Multiplatform *(planificado; móvil + escritorio)* |
+| Cliente | Kotlin Multiplatform (KMP) + Compose Multiplatform *(planificado; móvil + escritorio)* |
 
 ## Arquitectura
 
@@ -61,11 +62,11 @@ flowchart TB
         subgraph APP["APLICACION - casos de uso + puertos"]
             direction TB
             subgraph DOM["DOMINIO - POJOs puros"]
-                D1["Gasto - Cliente - Usuario<br/>Dinero - FacturaTextParser"]
+                D1["Gasto - Ingreso - Cliente<br/>Usuario - Dinero - FacturaTextParser"]
             end
-            PIN["Puertos IN<br/>(gasto, cliente, usuario)"]
+            PIN["Puertos IN (gasto, ingreso, cliente, usuario)"]
             SVC["Servicios (impl)"]
-            POUT["Puertos OUT<br/>Repository - Ocr - FileStorage<br/>TokenGenerador"]
+            POUT["Puertos OUT<br/>Repositorios - Ocr - FileStorage - TokenGenerador"]
         end
         AIN["Adaptadores IN (controllers REST)"]
         AOUT["Adaptadores OUT<br/>JPA - Tesseract/Mock - LocalStorage - Jwt"]
@@ -89,39 +90,52 @@ flowchart TB
 
 ## Módulos de dominio
 
-- **gasto** — gastos del autónomo. Creación manual o por digitalización (OCR). Estado
-  (borrador/revisado), deducible, referencia al archivo original.
+- **gasto** — dinero que sale. Creación manual o por digitalización (OCR). Estado
+  (borrador/revisado), deducible, referencia al archivo. Opcionalmente imputable a un
+  cliente (nullable — muchos gastos son generales).
+- **ingreso** — dinero que entra: facturas emitidas a un cliente. Importe (base/IVA/total),
+  concepto, y **estado de cobro** (PENDIENTE/COBRADA) con fecha de cobro. El usuario marca
+  el cobro a mano (la app no se conecta al banco). Transiciones: `registrarCobro` y
+  `revertirCobro` (deshacer), con sus reglas de negocio.
 - **cliente** — personas/empresas a las que factura el usuario. Nombre, NIF, email,
-  teléfono. NIF único por usuario. Soft delete (campo `activo`): "borrar" desactiva, no
-  elimina, para preservar la integridad con las facturas asociadas.
-- **usuario** — identidad y autenticación (registro, login, refresh tokens).
-- **ingreso** — *(Fase 2, en construcción)* facturas emitidas a clientes, con estado de
-  cobro.
+  teléfono. NIF único por usuario. Soft delete (`activo`): "borrar" desactiva, no elimina.
+- **usuario** — identidad y autenticación (registro, login, refresh, logout).
 - **shared** — `Dinero` (objeto de valor).
+
+## Cómo se obtiene la visión económica
+
+- Cada **ingreso** apunta a un **cliente** y tiene un **estado de cobro**: eso permite ver
+  quién ha pagado y quién debe. Cada **gasto** puede imputarse a un cliente. Cruzando
+  ingresos y gastos por cliente y por periodo se obtiene beneficio y rentabilidad — ese
+  cruce y sus vistas son la **Fase 3 (dashboard)**; este backend monta los datos que lo
+  hacen posible.
 
 ## Seguridad
 
 - Contraseñas con **BCrypt**. Autenticación **JWT**: access token corto + refresh token
   revocable (hash SHA-256 en BD). Logout real. Rotación de tokens: pendiente.
-- El usuario autenticado se obtiene en los controllers con `@AuthenticationPrincipal`.
-  Control de acceso por `usuarioId` en todas las consultas: un usuario solo ve sus datos.
+- Usuario autenticado vía `@AuthenticationPrincipal`. Control de acceso por `usuarioId` en
+  todas las consultas: un usuario solo ve y opera sobre sus propios datos.
 
 ## Digitalización (OCR)
 
 Subes una imagen de factura -> se almacena -> Tesseract extrae el texto -> `FacturaTextParser`
-saca los campos (emisor, fecha, importes) -> se crea el gasto en BORRADOR para que el
-usuario revise. El OCR real se activa con el perfil `ocr`; por defecto se usa un mock.
-Pendiente: soporte de PDF (ahora solo imágenes), extracción del emisor, OCR asíncrono.
+saca los campos (emisor, fecha, importes) -> se crea el gasto en BORRADOR para revisar. OCR
+real con el perfil `ocr`; mock por defecto. Pendiente: PDF (ahora solo imágenes), emisor,
+OCR asíncrono, MinIO, y digitalización de ingresos.
 
 ## Estado actual
 
 - **Fase 0 — Fundamentos** ✅ cerrada y testeada.
 - **Seguridad (JWT)** ✅ implementada (falta rotación de refresh tokens).
-- **Fase 1 — Digitalización (OCR)** ✅ funcional (falta PDF, emisor, async, MinIO).
-- **Fase 2 — Ingresos y clientes** 🚧 en construcción:
-  - [x] Módulo **cliente** (CRUD + soft delete, reglas construidas con TDD)
-  - [ ] Módulo **ingreso** (con estado de cobro, digitalización por OCR)
-  - [ ] Ligar gastos e ingresos a clientes (rentabilidad por cliente)
+- **Fase 1 — Digitalización (OCR)** ✅ funcional para gastos (faltan PDF, emisor, async, MinIO).
+- **Fase 2 — Ingresos y clientes** ✅ cerrada:
+  - [x] Módulo **cliente** (CRUD + soft delete, reglas con TDD)
+  - [x] Módulo **ingreso** (estado de cobro, transiciones registrar/revertir con TDD)
+  - [x] Gastos e ingresos ligables a **cliente** (rentabilidad por cliente posible)
+  - [ ] Digitalización de ingresos por OCR (opcional, pendiente)
+- **Fase 3 — Dashboard** ⬜ siguiente: beneficio por periodo, rentabilidad por cliente,
+  pendientes de cobro, total facturado.
 
 ## Roadmap
 
@@ -130,7 +144,7 @@ Pendiente: soporte de PDF (ahora solo imágenes), extracción del emisor, OCR as
 | Fase 0 | Backend en pie, CRUD de gasto (hecho) |
 | Seguridad | Autenticación JWT completa (hecho; falta rotación) |
 | Fase 1 | OCR + almacenamiento de archivos (hecho; faltan mejoras) |
-| Fase 2 | Ingresos y clientes (en curso; cliente hecho) |
+| Fase 2 | Ingresos y clientes (hecho) |
 | Fase 3 | Dashboard: beneficio por periodo, rentabilidad por cliente, pendientes de cobro |
 | Fase 4 | Exportación al gestor, pulido, despliegue |
 | Cliente | App KMP (móvil + escritorio) consumiendo la API |
@@ -147,8 +161,7 @@ cp .env.example .env                 # y rellenar (BD, JWT_SECRET, ruta tessdata
 ```
 
 - **Modo mock OCR:** arranque normal, no requiere Tesseract.
-- **Modo OCR real:** perfil `ocr` activo (`SPRING_PROFILES_ACTIVE=ocr`) + ruta de tessdata
-  configurada.
+- **Modo OCR real:** perfil `ocr` activo (`SPRING_PROFILES_ACTIVE=ocr`) + ruta de tessdata.
 
 API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.html`
 (botón "Authorize" para el token JWT).
@@ -160,8 +173,8 @@ API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.
 ```
 
 Tests unitarios de dominio y servicios (JUnit 5 + Mockito + AssertJ). El login, el parser
-de facturas y las reglas del módulo cliente (NIF duplicado, soft delete) se construyeron
-con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
+de facturas, las reglas de cliente (NIF duplicado, soft delete) y las transiciones de cobro
+del ingreso se construyeron con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
 
 ## Variables de entorno
 
