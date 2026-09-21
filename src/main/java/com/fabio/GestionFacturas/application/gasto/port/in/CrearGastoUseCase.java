@@ -23,7 +23,8 @@ public interface CrearGastoUseCase {
             BigDecimal baseImponible,
             BigDecimal iva,
             BigDecimal total,
-            String moneda
+            String moneda,
+            Long clienteId
 
     ){}
 

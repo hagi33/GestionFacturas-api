@@ -29,6 +29,9 @@ public class GastoJpaEntity {
     @Column(name = "categoria_id")
     private Long categoriaId;
 
+    @Column(name = "cliente_id")
+    private Long clienteId;
+
     private String emisor;
 
     @Column(name = "fecha_emision")
@@ -64,12 +67,13 @@ public class GastoJpaEntity {
 
     }
 
-    public GastoJpaEntity(Long id, Long usuarioId, Long categoriaId, String emisor, LocalDate fechaEmision,
+    public GastoJpaEntity(Long id, Long usuarioId, Long categoriaId, Long clienteId, String emisor, LocalDate fechaEmision,
                             BigDecimal baseImponible, BigDecimal iva, BigDecimal total, String referenciaArchivo,
                             String moneda, boolean deducible, EstadoGasto estado, LocalDateTime creadoEn) {
         this.id = id;
         this.usuarioId = usuarioId;
         this.categoriaId = categoriaId;
+        this.clienteId = clienteId;
         this.emisor = emisor;
         this.fechaEmision = fechaEmision;
         this.baseImponible = baseImponible;
@@ -92,6 +96,10 @@ public class GastoJpaEntity {
 
     public Long getCategoriaId() {
         return categoriaId;
+    }
+
+    public Long getClienteId() {
+        return clienteId;
     }
 
     public String getEmisor() {

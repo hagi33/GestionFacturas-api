@@ -15,6 +15,7 @@ public class Gasto {
     private final Long id;
     private final Long usuarioId;
     private Long categoriaId;
+    private final Long clienteId;
     private String emisor;
     private LocalDate fechaEmision;
     private Dinero baseImponible;
@@ -29,7 +30,7 @@ public class Gasto {
      * Full constructor used by mappers to rebuild a Gasto from persistence.
      * Enforces the domain's own invariants (self-validation), independent of any framework.
      */
-    public Gasto(Long id, Long usuarioId, Long categoriaId, String emisor,
+    public Gasto(Long id, Long usuarioId, Long categoriaId, Long clienteId, String emisor,
                    LocalDate fechaEmision, Dinero baseImponible, Dinero iva, Dinero total,
                    String referenciaArchivo, boolean deducible, EstadoGasto estado, LocalDateTime creadoEn) {
         if (usuarioId == null) {
@@ -49,6 +50,7 @@ public class Gasto {
         this.id = id;
         this.usuarioId = usuarioId;
         this.categoriaId = categoriaId;
+        this.clienteId = clienteId;
         this.emisor = emisor;
         this.fechaEmision = fechaEmision;
         this.baseImponible = baseImponible;
@@ -61,9 +63,9 @@ public class Gasto {
     }
 
     /** Factory for a manually entered expense: starts life as BORRADOR, unreviewed. */
-    public static Gasto crearBorrador(Long usuarioId, String emisor, LocalDate fechaEmision,
+    public static Gasto crearBorrador(Long usuarioId, Long clienteId, String emisor, LocalDate fechaEmision,
                                         Dinero baseImponible, Dinero iva, Dinero total) {
-        return new Gasto(null, usuarioId, null, emisor, fechaEmision,
+        return new Gasto(null, usuarioId, null, clienteId, emisor, fechaEmision,
                 baseImponible, iva, total, null, false, EstadoGasto.BORRADOR, LocalDateTime.now());
     }
 
@@ -71,7 +73,7 @@ public class Gasto {
     public static Gasto crearBorradorDesdeArchivo(Long usuarioId, String emisor, LocalDate fechaEmision,
                                                     Dinero baseImponible, Dinero iva, Dinero total,
                                                     String referenciaArchivo) {
-        return new Gasto(null, usuarioId, null, emisor, fechaEmision,
+        return new Gasto(null, usuarioId, null, null, emisor, fechaEmision,
                 baseImponible, iva, total, referenciaArchivo, false, EstadoGasto.BORRADOR, LocalDateTime.now());
     }
 
@@ -85,6 +87,7 @@ public class Gasto {
     public Long getId() { return id; }
     public Long getUsuarioId() { return usuarioId; }
     public Long getCategoriaId() { return categoriaId; }
+    public Long getClienteId() { return clienteId; }
     public String getEmisor() { return emisor; }
     public LocalDate getFechaEmision() { return fechaEmision; }
     public Dinero getBaseImponible() { return baseImponible; }
