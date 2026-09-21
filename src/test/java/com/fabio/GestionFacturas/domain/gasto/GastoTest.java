@@ -25,7 +25,7 @@ class GastoTest {
         Dinero total = new Dinero(new BigDecimal("121.00"), "EUR");
 
         // Act
-        Gasto gasto = Gasto.crearBorrador(1L, "Proveedor SL", LocalDate.now(), base, iva, total);
+        Gasto gasto = Gasto.crearBorrador(1L, null, "Proveedor SL", LocalDate.now(), base, iva, total);
 
         // Assert
         assertThat(gasto.getEstado()).isEqualTo(EstadoGasto.BORRADOR);
@@ -41,7 +41,7 @@ class GastoTest {
         LocalDate fecha = LocalDate.of(2026, 1, 15);
 
         // Act
-        Gasto gasto = Gasto.crearBorrador(1L, "Proveedor SL", fecha, base, iva, total);
+        Gasto gasto = Gasto.crearBorrador(1L, null, "Proveedor SL", fecha, base, iva, total);
 
         // Assert
         assertThat(gasto.getUsuarioId()).isEqualTo(1L);
@@ -77,7 +77,7 @@ class GastoTest {
         Dinero total = new Dinero(new BigDecimal("50.00"), "EUR");
 
         // Act
-        Gasto gasto = Gasto.crearBorrador(1L, "Proveedor SL", LocalDate.now(), null, null, total);
+        Gasto gasto = Gasto.crearBorrador(1L, null, "Proveedor SL", LocalDate.now(), null, null, total);
 
         // Assert
         assertThat(gasto.getCategoriaId()).isNull();
@@ -89,7 +89,7 @@ class GastoTest {
     void revisarActualizaEstadoCategoriaYDeducible() {
         // Arrange
         Dinero total = new Dinero(new BigDecimal("121.00"), "EUR");
-        Gasto gasto = Gasto.crearBorrador(1L, "Proveedor SL", LocalDate.now(), null, null, total);
+        Gasto gasto = Gasto.crearBorrador(1L, null, "Proveedor SL", LocalDate.now(), null, null, total);
 
         // Act
         gasto.revisar(5L, true);
@@ -114,6 +114,7 @@ class GastoTest {
                         null,                    // id
                         null,                    // usuarioId  <-- dispara la excepción
                         null,                    // categoriaId
+                        null,                    // clienteId
                         "Proveedor SL",          // emisor
                         LocalDate.now(),         // fechaEmision
                         base,                    // baseImponible

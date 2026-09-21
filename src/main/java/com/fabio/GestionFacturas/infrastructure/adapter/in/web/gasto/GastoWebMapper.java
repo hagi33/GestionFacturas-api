@@ -23,7 +23,8 @@ public class GastoWebMapper {
                 request.baseImponible(),
                 request.iva(),
                 request.total(),
-                request.moneda()
+                request.moneda(),
+                request.clienteId()
         );
     }
 
@@ -34,6 +35,7 @@ public class GastoWebMapper {
                 gasto.getId(),
                 gasto.getUsuarioId(),
                 gasto.getCategoriaId(),
+                gasto.getClienteId(),
                 gasto.getEmisor(),
                 gasto.getFechaEmision(),
                 extraerCantidad(gasto.getBaseImponible()),

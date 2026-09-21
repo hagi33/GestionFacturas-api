@@ -31,7 +31,7 @@ class ConsultarGastosServiceTest {
     // ---- Método auxiliar para no repetir la creación de un gasto en cada test ----
     private Gasto gastoDeUsuario(Long usuarioId) {
         Dinero total = new Dinero(new BigDecimal("121.00"), "EUR");
-        return Gasto.crearBorrador(usuarioId, "Proveedor SL", LocalDate.now(), null, null, total);
+        return Gasto.crearBorrador(usuarioId, null, "Proveedor SL", LocalDate.now(), null, null, total);
     }
 
     @Test

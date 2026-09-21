@@ -9,6 +9,7 @@ public record GastoResponse(
         Long id,
         Long usuarioId,
         Long categoriaId,
+        Long clienteId,
         String emisor,
         LocalDate fechaEmision,
         BigDecimal baseImponible,

@@ -13,5 +13,6 @@ public record CrearGastoRequest(
         @PositiveOrZero BigDecimal baseImponible,
         @PositiveOrZero BigDecimal iva,
         @NotNull @PositiveOrZero BigDecimal total,
-        String moneda
+        String moneda,
+        Long clienteId
         ) {}
