@@ -33,6 +33,7 @@ al gestor: le da el trabajo ya ordenado.
 | Base de datos | PostgreSQL |
 | Migraciones | Flyway |
 | Seguridad | Spring Security + JWT (access + refresh revocable) |
+| Rate limiting | Bucket4j (en memoria) |
 | OCR | Tesseract vía Tess4J (español); mock para desarrollo/tests |
 | Almacenamiento de archivos | Sistema de archivos local (MinIO planificado) |
 | Documentación API | OpenAPI / Swagger (springdoc 3.x) |
@@ -90,50 +91,55 @@ flowchart TB
 
 ## Módulos de dominio
 
-- **gasto** — dinero que sale. Creación manual o por digitalización (OCR). Estado
-  (borrador/revisado), deducible, referencia al archivo. Opcionalmente imputable a un
-  cliente (nullable — muchos gastos son generales).
+- **gasto** — dinero que sale. Manual o por OCR. Estado, deducible, referencia al archivo.
+  Opcionalmente imputable a un cliente (nullable — muchos gastos son generales).
 - **ingreso** — dinero que entra: facturas emitidas a un cliente. Importe (base/IVA/total),
-  concepto, y **estado de cobro** (PENDIENTE/COBRADA) con fecha de cobro. El usuario marca
-  el cobro a mano (la app no se conecta al banco). Transiciones: `registrarCobro` y
-  `revertirCobro` (deshacer), con sus reglas de negocio.
-- **cliente** — personas/empresas a las que factura el usuario. Nombre, NIF, email,
-  teléfono. NIF único por usuario. Soft delete (`activo`): "borrar" desactiva, no elimina.
-- **usuario** — identidad y autenticación (registro, login, refresh, logout).
+  concepto, y **estado de cobro** (PENDIENTE/COBRADA) con fecha. El usuario marca el cobro a
+  mano (la app no se conecta al banco). Transiciones `registrarCobro` y `revertirCobro`.
+- **cliente** — a quién factura el usuario. Nombre, NIF, email, teléfono. NIF único por
+  usuario. Soft delete (`activo`).
+- **usuario** — identidad y autenticación.
 - **shared** — `Dinero` (objeto de valor).
-
-## Cómo se obtiene la visión económica
-
-- Cada **ingreso** apunta a un **cliente** y tiene un **estado de cobro**: eso permite ver
-  quién ha pagado y quién debe. Cada **gasto** puede imputarse a un cliente. Cruzando
-  ingresos y gastos por cliente y por periodo se obtiene beneficio y rentabilidad — ese
-  cruce y sus vistas son la **Fase 3 (dashboard)**; este backend monta los datos que lo
-  hacen posible.
 
 ## Seguridad
 
 - Contraseñas con **BCrypt**. Autenticación **JWT**: access token corto + refresh token
-  revocable (hash SHA-256 en BD). Logout real. Rotación de tokens: pendiente.
-- Usuario autenticado vía `@AuthenticationPrincipal`. Control de acceso por `usuarioId` en
-  todas las consultas: un usuario solo ve y opera sobre sus propios datos.
+  revocable (hash SHA-256 en BD). Logout real. Control de acceso por `usuarioId`: cada
+  usuario solo ve y opera sobre sus datos.
+- **Rate limiting** (Bucket4j, en memoria) para frenar abuso:
+  - Login: 10 peticiones/minuto por IP (frena fuerza bruta de credenciales).
+  - Registro: 5 peticiones/hora por IP (frena creación masiva de cuentas).
+  - Resto de endpoints: 50 peticiones/minuto por usuario autenticado.
+  - Al superar el límite: HTTP 429 con cabecera `Retry-After`.
+
+### Seguridad prevista (pendiente, sobre todo para el despliegue)
+
+Estas capas están identificadas y priorizadas para más adelante — la mayoría tienen sentido
+al desplegar, no en desarrollo local:
+
+- Rotación de refresh tokens (detección de reuso).
+- Configuración de CORS (al conectar el cliente KMP).
+- Cabeceras de seguridad HTTP (HSTS, X-Content-Type-Options, CSP) al desplegar tras HTTPS.
+- Rate limiting distribuido con Redis (al escalar a varias instancias).
+- IP real del cliente vía `X-Forwarded-For` (tras un proxy de confianza).
+- Límite de tamaño de peticiones y subidas de archivos.
+- Expiración de buckets de rate limiting inactivos (ahora crecen sin límite en memoria).
+- Secretos en un gestor de secretos en producción (ahora en `.env`).
 
 ## Digitalización (OCR)
 
 Subes una imagen de factura -> se almacena -> Tesseract extrae el texto -> `FacturaTextParser`
-saca los campos (emisor, fecha, importes) -> se crea el gasto en BORRADOR para revisar. OCR
-real con el perfil `ocr`; mock por defecto. Pendiente: PDF (ahora solo imágenes), emisor,
-OCR asíncrono, MinIO, y digitalización de ingresos.
+saca los campos -> se crea el gasto en BORRADOR para revisar. OCR real con el perfil `ocr`;
+mock por defecto. Pendiente: PDF, emisor, OCR asíncrono, MinIO, digitalización de ingresos.
 
 ## Estado actual
 
 - **Fase 0 — Fundamentos** ✅ cerrada y testeada.
-- **Seguridad (JWT)** ✅ implementada (falta rotación de refresh tokens).
-- **Fase 1 — Digitalización (OCR)** ✅ funcional para gastos (faltan PDF, emisor, async, MinIO).
-- **Fase 2 — Ingresos y clientes** ✅ cerrada:
-  - [x] Módulo **cliente** (CRUD + soft delete, reglas con TDD)
-  - [x] Módulo **ingreso** (estado de cobro, transiciones registrar/revertir con TDD)
-  - [x] Gastos e ingresos ligables a **cliente** (rentabilidad por cliente posible)
-  - [ ] Digitalización de ingresos por OCR (opcional, pendiente)
+- **Seguridad (JWT + rate limiting)** ✅ implementada (falta rotación de tokens; ver
+  seguridad prevista).
+- **Fase 1 — Digitalización (OCR)** ✅ funcional para gastos.
+- **Fase 2 — Ingresos y clientes** ✅ cerrada (cliente con soft delete, ingreso con estado
+  de cobro y transiciones, gastos e ingresos ligables a cliente).
 - **Fase 3 — Dashboard** ⬜ siguiente: beneficio por periodo, rentabilidad por cliente,
   pendientes de cobro, total facturado.
 
@@ -142,10 +148,10 @@ OCR asíncrono, MinIO, y digitalización de ingresos.
 | Fase | Foco |
 |------|------|
 | Fase 0 | Backend en pie, CRUD de gasto (hecho) |
-| Seguridad | Autenticación JWT completa (hecho; falta rotación) |
+| Seguridad | JWT + rate limiting (hecho; ver seguridad prevista) |
 | Fase 1 | OCR + almacenamiento de archivos (hecho; faltan mejoras) |
 | Fase 2 | Ingresos y clientes (hecho) |
-| Fase 3 | Dashboard: beneficio por periodo, rentabilidad por cliente, pendientes de cobro |
+| Fase 3 | Dashboard: beneficio, rentabilidad por cliente, pendientes de cobro |
 | Fase 4 | Exportación al gestor, pulido, despliegue |
 | Cliente | App KMP (móvil + escritorio) consumiendo la API |
 | v1+ | Duplicados, recurrentes, presupuestos, categorización automática... |
@@ -173,8 +179,8 @@ API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.
 ```
 
 Tests unitarios de dominio y servicios (JUnit 5 + Mockito + AssertJ). El login, el parser
-de facturas, las reglas de cliente (NIF duplicado, soft delete) y las transiciones de cobro
-del ingreso se construyeron con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
+de facturas, las reglas de cliente y las transiciones de cobro del ingreso se construyeron
+con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
 
 ## Variables de entorno
 
