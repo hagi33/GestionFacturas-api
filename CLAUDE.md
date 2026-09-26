@@ -18,6 +18,7 @@ REST API so the client is decoupled.
 - Java 21, Spring Boot 4.1.x
 - PostgreSQL + Flyway
 - Spring Security + JWT (access + refresh revocable) — implemented
+- Rate limiting: Bucket4j 8.x, in-memory — implemented
 - OCR: Tesseract via Tess4J (Spanish), selected by the `ocr` Spring profile; mock OCR is
   the default (dev and tests)
 - File storage: local filesystem (MinIO planned)
@@ -80,6 +81,7 @@ infrastructure
 ├── adapter/out/ocr         -> MockOcrAdapter (default), TesseractOcrAdapter (@Profile("ocr"))
 ├── adapter/out/storage     -> LocalStorageAdapter (FileStoragePort)
 └── config                  -> DomainBeansConfig, SecurityConfig,
+                                config/ratelimit (RateLimitFilter),
                                 config/security (JwtTokenProvider, JwtAuthenticationFilter,
                                 OpenApiConfig, RefreshTokenGenerador)
 ```
@@ -87,89 +89,106 @@ infrastructure
 ## Domain modules
 
 - **gasto**: expenses (money out). Manual or OCR digitization. State, deducible, file
-  reference. Optional nullable `clienteId` — a gasto MAY be attributed to a client, but many
-  are general (no client). When a clienteId is provided (create or review), validate it
-  exists, belongs to the user, and is ACTIVE (via ClienteRepositoryPort); if null, skip.
-- **ingreso**: income (money in) — invoices issued to a client. Fields: clienteId
-  (required, must exist/be the user's/active), concepto, fechaEmision, base/iva/total
-  (Dinero), estadoCobro (PENDIENTE/COBRADA), fechaCobro (nullable). The user marks payment
-  MANUALLY (the app never connects to a bank). Domain transitions (rules live in the DOMAIN,
-  not the service):
-  * registrarCobro(fecha): only if PENDIENTE (else CobroInvalidoException); fecha must be
-    >= fechaEmision (else CobroInvalidoException); sets COBRADA + fechaCobro.
-  * revertirCobro(): only if COBRADA (else CobroInvalidoException); back to PENDIENTE,
-    fechaCobro null.
-  Two SEPARATE entities Gasto/Ingreso (NOT a shared Movimiento) — they diverge (deducible
-  vs estadoCobro).
-- **cliente**: the user's clients. nombre, nif, email, telefono. NIF unique per user
-  (unique on usuario_id+nif). SOFT DELETE via `activo`: "delete" calls domain desactivar()
-  (activo=false) and saves — never removes the row. buscarPorUsuario returns only active.
+  reference. Optional nullable clienteId (many gastos are general). When a clienteId is
+  provided (create/review), validate it exists, is the user's, and is ACTIVE; if null, skip.
+- **ingreso**: income (money in) — invoices issued to a client. clienteId (required, must
+  exist/be the user's/active), concepto, fechaEmision, base/iva/total (Dinero), estadoCobro
+  (PENDIENTE/COBRADA), fechaCobro. Payment is marked MANUALLY (no bank integration). Domain
+  transitions (rules in the DOMAIN, not the service): registrarCobro(fecha) — only if
+  PENDIENTE, fecha >= fechaEmision, sets COBRADA; revertirCobro() — only if COBRADA, back to
+  PENDIENTE. Two SEPARATE entities Gasto/Ingreso (not a shared Movimiento).
+- **cliente**: the user's clients. nombre, nif, email, telefono. NIF unique per user. SOFT
+  DELETE via `activo` (desactivar() sets false; never removes the row). buscarPorUsuario
+  returns only active. Another user's client -> not-found (404).
 - **usuario**: identity + JWT auth.
 - **categoria**: expense categories (read-only catalog).
 
 ## Security (implemented)
-- BCrypt for passwords (Usuario holds passwordHash).
-- JwtTokenProvider implements TokenGeneradorPort. JwtAuthenticationFilter validates the
-  Bearer token and stores the user id as the SecurityContext principal. Controllers use
-  @AuthenticationPrincipal Long usuarioId — never hardcode.
+
+- BCrypt for passwords. JwtTokenProvider implements TokenGeneradorPort. The JWT principal
+  is the user id as a STRING (the token subject); JwtAuthenticationFilter stores it in the
+  SecurityContext. Controllers use @AuthenticationPrincipal Long usuarioId.
 - Refresh tokens: revocable, stored HASHED (SHA-256 — lookupable; NOT BCrypt). Logout marks
-  revocado=true (no delete). No rotation yet (deferred — don't add unless asked).
-- SecurityConfig: stateless, CSRF disabled, JWT filter registered. Public: /api/auth/**,
-  /api/health, springdoc/swagger. Else authenticated. OpenApiConfig declares the Bearer JWT
-  scheme (Swagger "Authorize" button). The default "generated security password" log line is
-  harmless noise; the custom SecurityConfig is the one in effect.
+  revocado=true (no delete). No rotation yet (deferred).
+- SecurityConfig: stateless, CSRF disabled. Public: /api/auth/**, /api/health,
+  springdoc/swagger. Else authenticated. OpenApiConfig declares the Bearer JWT scheme.
+
+### Rate limiting (Bucket4j, in-memory)
+- `RateLimitFilter` (config/ratelimit), a OncePerRequestFilter. Registered in SecurityConfig
+  with addFilterAfter(rateLimitFilter, JwtAuthenticationFilter.class) so the user is already
+  in the SecurityContext when it runs. A FilterRegistrationBean with setEnabled(false)
+  disables its servlet-chain auto-registration (otherwise it wouldn't run in the security
+  chain). Single @Component instance injected into SecurityConfig.
+- Buckets live in instance-field ConcurrentHashMaps (one per bucket type), reused via
+  computeIfAbsent with a STABLE key — this persistence between requests is essential; local
+  maps were the bug that let everything through.
+- Limits: login /api/auth/login 10/min per IP; register /api/auth/register 5/hour per IP;
+  all other authenticated endpoints 50/min per user (key = usuarioId). Over limit -> 429
+  with Retry-After. Requests without an authenticated user pass through (Security handles 401).
+- KNOWN LIMITATION (pending): the bucket maps grow unbounded (no eviction of idle buckets) —
+  fine for now, but for production use a cache with expiry or Redis.
 
 ## OCR / digitization (Phase 1)
 - OcrPort (application/shared): byte[] -> String plain text ONLY. Must not parse fields.
-- MockOcrAdapter default; TesseractOcrAdapter @Profile("ocr"), datapath/language from config
-  (never hardcode paths). Images only; PDF pending.
+- MockOcrAdapter default; TesseractOcrAdapter @Profile("ocr"), datapath/language from config.
+  Images only; PDF pending.
 - FacturaTextParser (domain, wired in DomainBeansConfig): text -> DatosFacturaExtraidos.
-  Missing fields -> null (user completes on review). Built with TDD.
-- DigitalizarFacturaService: store -> OCR -> parse -> create Gasto in BORRADOR with the file
-  reference. Ingreso digitization not implemented yet.
+  Missing fields -> null. Built with TDD.
+- DigitalizarFacturaService: store -> OCR -> parse -> create Gasto in BORRADOR with file ref.
 
 ## Error handling (GlobalExceptionHandler, @RestControllerAdvice)
 - GastoInvalidoException / ClienteInvalidoException / IngresoInvalidoException /
   IllegalArgumentException -> 400
 - MethodArgumentNotValidException -> 400 with field errors
 - EmailYaRegistradoException / ClienteDuplicadoException -> 409
-- CobroInvalidoException -> 409 (illegal state transition / invalid cobro date)
+- CobroInvalidoException -> 409
 - CredencialesInvalidadException -> 401
 - ClienteNoEncontradoException / IngresoNoEncontradoException -> 404
-Domain throws domain exceptions; the handler maps to HTTP. Domain never knows HTTP.
+  Domain throws domain exceptions; the handler maps to HTTP. Domain never knows HTTP.
 
 ## Code conventions
 - No ternary operators; explicit ifs. Constructor injection only (never @Autowired fields).
 - DTOs and commands are records (commands nested in their use-case interface).
 - Money is BigDecimal, wrapped in Dinero in the domain.
-- Enums persisted as STRING. Domain objects validate invariants and hold their own state
-  transitions (business rules in the domain, services only orchestrate).
+- Enums persisted as STRING. Business rules live in the domain; services orchestrate.
 - Access control by usuarioId everywhere; another user's resource is not-found, not revealed.
 - Spanish identifiers/domain terms.
 
 ## Database
-- Schema owned by Flyway (ddl-auto: validate). Migrations V{n}__desc.sql. Current:
-  V1 init, V2 seed usuario, V3 refresh_token, V4 gasto referencia_archivo, V5 cliente,
-  V6 ingreso, V7 gasto cliente_id.
+- Schema owned by Flyway (ddl-auto: validate). Migrations V{n}__desc.sql: V1 init,
+  V2 seed usuario, V3 refresh_token, V4 gasto referencia_archivo, V5 cliente, V6 ingreso,
+  V7 gasto cliente_id.
 - Do NOT edit applied migrations; add a new V{n}. snake_case columns, mapped explicitly.
 - Config (DB creds, JWT secret, tesseract datapath) via .env (EnvFile plugin in IntelliJ).
   Never hardcode secrets or commit the .env.
 
 ## Testing
 - Unit tests with JUnit 5 + Mockito (mock the ports) for domain and services. Broad coverage.
-- Prefer TDD for new business rules (login, invoice parser, cliente rules, and the ingreso
-  cobro transitions were built test-first). Use verify(..., never()) to assert a side effect
-  did NOT happen. The owner writes the TDD tests for genuinely new business rules himself;
-  Claude Code implements against them and does the mechanical parts (finer services, CRUDs).
-- Business rules live in the domain and are unit-tested there (pure POJO, no mocks); service
-  tests cover orchestration/access-control, not the rules again (no duplication).
-- Tests always use the mock OCR, never native Tesseract. Testcontainers planned.
+- Prefer TDD for new business rules (login, invoice parser, cliente rules, ingreso cobro
+  transitions were built test-first). Use verify(..., never()) for "did NOT happen". Owner
+  writes the TDD tests for genuinely new rules; Claude Code implements against them and does
+  the mechanical parts. Business rules are tested in the domain (pure POJO); service tests
+  cover orchestration/access-control, not the rules again.
+- Tests use the mock OCR, never native Tesseract. Testcontainers planned.
+
+## Pending security work (deferred, mostly for deployment)
+- Refresh token rotation (reuse detection).
+- CORS configuration (when the KMP client connects).
+- HTTP security headers (HSTS, X-Content-Type-Options, CSP) — when deployed behind HTTPS.
+- Distributed rate limiting with Redis — when running multiple instances.
+- Real client IP via X-Forwarded-For — only behind a trusted proxy.
+- Request/upload size limits (for invoice uploads).
+- Eviction of idle rate-limit buckets (currently unbounded in memory).
+- Secrets in a secrets manager (production), not just .env.
 
 ## Environment gotchas (learned the hard way)
-- Run with Java 21 (project target), not a newer JDK, or behavior is inconsistent.
+- Run with Java 21 (project target), not a newer JDK.
 - If DevTools causes erratic startups after big changes, run `./mvnw clean compile` in the
-  terminal to see the real state, then Rebuild Project.
+  terminal, then Rebuild Project.
 - Each run configuration needs the EnvFile enabled, or JWT/DB/OCR config arrives empty.
+- A @Bean Filter auto-registers in the servlet chain; to run it only in the Security chain,
+  disable that with a FilterRegistrationBean(setEnabled(false)).
+- Shared state in a filter (rate-limit buckets) must be in instance fields, not locals.
 
 ## Working style
 - Focused, minimal changes for the task. Do not refactor unrelated code.
