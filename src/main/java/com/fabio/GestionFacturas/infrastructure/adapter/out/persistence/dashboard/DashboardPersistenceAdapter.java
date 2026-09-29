@@ -2,6 +2,7 @@ package com.fabio.GestionFacturas.infrastructure.adapter.out.persistence.dashboa
 
 import com.fabio.GestionFacturas.application.dashboard.port.out.DashboardConsultaPort;
 import com.fabio.GestionFacturas.domain.gasto.Gasto;
+import com.fabio.GestionFacturas.domain.ingreso.EstadoCobro;
 import com.fabio.GestionFacturas.domain.ingreso.Ingreso;
 import com.fabio.GestionFacturas.infrastructure.adapter.out.persistence.gasto.GastoJpaRepository;
 import com.fabio.GestionFacturas.infrastructure.adapter.out.persistence.gasto.GastoMapper;
@@ -39,6 +40,14 @@ public class DashboardPersistenceAdapter implements DashboardConsultaPort {
     @Override
     public List<Ingreso> buscarIngresosPorPeriodo(Long usuarioId, LocalDate desde, LocalDate hasta) {
         return ingresoJpaRepository.findByUsuarioIdAndFechaEmisionBetween(usuarioId, desde, hasta)
+                .stream()
+                .map(IngresoMapper::aDominio)
+                .toList();
+    }
+
+    @Override
+    public List<Ingreso> buscarIngresosPendientesDeCobro(Long usuarioId) {
+        return ingresoJpaRepository.findByUsuarioIdAndEstadoCobroOrderByFechaEmisionAsc(usuarioId, EstadoCobro.PENDIENTE)
                 .stream()
                 .map(IngresoMapper::aDominio)
                 .toList();
