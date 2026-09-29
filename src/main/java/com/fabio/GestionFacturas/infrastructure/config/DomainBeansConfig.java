@@ -1,5 +1,6 @@
 package com.fabio.GestionFacturas.infrastructure.config;
 
+import com.fabio.GestionFacturas.domain.dashboard.CalculadoraPendientesCobro;
 import com.fabio.GestionFacturas.domain.dashboard.CalculadoraResumenPeriodo;
 import com.fabio.GestionFacturas.domain.gasto.FacturaTextParser;
 import org.springframework.context.annotation.Bean;
@@ -21,5 +22,10 @@ public class DomainBeansConfig {
     @Bean
     public CalculadoraResumenPeriodo calculadoraResumenPeriodo() {
         return new CalculadoraResumenPeriodo();
+    }
+
+    @Bean
+    public CalculadoraPendientesCobro calculadoraPendientesCobro() {
+        return new CalculadoraPendientesCobro();
     }
 }

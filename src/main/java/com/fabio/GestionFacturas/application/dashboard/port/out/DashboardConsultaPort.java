@@ -15,4 +15,7 @@ public interface DashboardConsultaPort {
     List<Gasto> buscarGastosPorPeriodo(Long usuarioId, LocalDate desde, LocalDate hasta);
 
     List<Ingreso> buscarIngresosPorPeriodo(Long usuarioId, LocalDate desde, LocalDate hasta);
+
+    /** The user's ingresos with estadoCobro PENDIENTE, oldest fechaEmision first. */
+    List<Ingreso> buscarIngresosPendientesDeCobro(Long usuarioId);
 }

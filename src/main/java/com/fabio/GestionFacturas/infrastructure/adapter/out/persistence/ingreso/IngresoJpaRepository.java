@@ -1,5 +1,6 @@
 package com.fabio.GestionFacturas.infrastructure.adapter.out.persistence.ingreso;
 
+import com.fabio.GestionFacturas.domain.ingreso.EstadoCobro;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -13,5 +14,8 @@ public interface IngresoJpaRepository extends JpaRepository<IngresoJpaEntity, Lo
 
     // Between is inclusive on both ends: fechaEmision in [desde, hasta]
     List<IngresoJpaEntity> findByUsuarioIdAndFechaEmisionBetween(Long usuarioId, LocalDate desde, LocalDate hasta);
+
+    // Oldest first: the longest-outstanding invoices lead the list
+    List<IngresoJpaEntity> findByUsuarioIdAndEstadoCobroOrderByFechaEmisionAsc(Long usuarioId, EstadoCobro estadoCobro);
 
 }
