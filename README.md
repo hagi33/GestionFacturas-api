@@ -5,8 +5,8 @@
 
 Aplicación para que **freelances y autónomos individuales** lleven el control de su
 actividad económica: registran sus **gastos**, sus **ingresos** y sus **clientes**,
-digitalizan facturas con OCR, y lo mantienen ordenado para entregar al gestor. El objetivo
-es dar visión de beneficio y de rentabilidad por cliente.
+digitalizan facturas con OCR, y consultan un **dashboard** con su beneficio y rentabilidad
+por cliente. Lo mantienen ordenado para entregar al gestor.
 
 Principio rector: **organización y visibilidad, nunca asesoría fiscal ni facturación
 oficial**. La app registra y reporta; no calcula la declaración ni emite facturas legales.
@@ -63,9 +63,9 @@ flowchart TB
         subgraph APP["APLICACION - casos de uso + puertos"]
             direction TB
             subgraph DOM["DOMINIO - POJOs puros"]
-                D1["Gasto - Ingreso - Cliente<br/>Usuario - Dinero - FacturaTextParser"]
+                D1["Gasto - Ingreso - Cliente<br/>Dashboard - Dinero"]
             end
-            PIN["Puertos IN (gasto, ingreso, cliente, usuario)"]
+            PIN["Puertos IN (gasto, ingreso, cliente, dashboard, usuario)"]
             SVC["Servicios (impl)"]
             POUT["Puertos OUT<br/>Repositorios - Ocr - FileStorage - TokenGenerador"]
         end
@@ -91,40 +91,51 @@ flowchart TB
 
 ## Módulos de dominio
 
-- **gasto** — dinero que sale. Manual o por OCR. Estado, deducible, referencia al archivo.
-  Opcionalmente imputable a un cliente (nullable — muchos gastos son generales).
-- **ingreso** — dinero que entra: facturas emitidas a un cliente. Importe (base/IVA/total),
-  concepto, y **estado de cobro** (PENDIENTE/COBRADA) con fecha. El usuario marca el cobro a
-  mano (la app no se conecta al banco). Transiciones `registrarCobro` y `revertirCobro`.
-- **cliente** — a quién factura el usuario. Nombre, NIF, email, teléfono. NIF único por
-  usuario. Soft delete (`activo`).
+- **gasto** — dinero que sale. Manual o por OCR. Opcionalmente imputable a un cliente.
+- **ingreso** — dinero que entra: facturas emitidas a un cliente (obligatorio). Estado de
+  cobro (PENDIENTE/COBRADA) que el usuario marca a mano.
+- **cliente** — a quién factura el usuario. Soft delete.
 - **usuario** — identidad y autenticación.
-- **shared** — `Dinero` (objeto de valor).
+- **dashboard** — vistas de solo lectura que agregan gasto/ingreso/cliente (sin tabla
+  propia): resumen de periodo, rentabilidad por cliente, pendientes de cobro.
+
+## El dashboard (Fase 3)
+
+Tres vistas, construidas sobre calculadoras de dominio puras (testeadas con TDD, sumas
+comprobadas a mano):
+
+- **`GET /api/dashboard/resumen?desde=...&hasta=...`** — para el periodo: facturado y
+  cobrado (con IVA y sin IVA), gastos, y cuatro cifras de beneficio (de caja y facturado,
+  cada una en total y en base imponible).
+- **`GET /api/dashboard/rentabilidad-clientes?desde=...&hasta=...`** — el mismo resumen,
+  desglosado por cliente. Los gastos sin cliente asignado se agrupan en una entrada "sin
+  cliente" aparte.
+- **`GET /api/dashboard/pendientes-cobro`** — lista de ingresos aún no cobrados, con su
+  importe total agregado.
+
+> ⚠️ **Incidencia conocida, en investigación:** en pruebas manuales, con dos clientes activos
+> con ingresos cada uno, `rentabilidad-clientes` devolvió solo uno de los dos. La calculadora
+> de dominio y el servicio se revisaron y parecen correctos; se sospecha del adaptador de
+> persistencia que trae los ingresos del periodo, pero no está confirmado. No dar por fiable
+> esta vista con más de un cliente hasta verificarlo con datos controlados.
 
 ## Seguridad
 
 - Contraseñas con **BCrypt**. Autenticación **JWT**: access token corto + refresh token
-  revocable (hash SHA-256 en BD). Logout real. Control de acceso por `usuarioId`: cada
-  usuario solo ve y opera sobre sus datos.
-- **Rate limiting** (Bucket4j, en memoria) para frenar abuso:
-  - Login: 10 peticiones/minuto por IP (frena fuerza bruta de credenciales).
-  - Registro: 5 peticiones/hora por IP (frena creación masiva de cuentas).
-  - Resto de endpoints: 50 peticiones/minuto por usuario autenticado.
-  - Al superar el límite: HTTP 429 con cabecera `Retry-After`.
+  revocable (hash SHA-256 en BD). Logout real. Control de acceso por `usuarioId`.
+- **Rate limiting** (Bucket4j, en memoria): login 10/min por IP, registro 5/hora por IP,
+  resto de endpoints 50/min por usuario. Supera el límite → HTTP 429 con `Retry-After`.
 
 ### Seguridad prevista (pendiente, sobre todo para el despliegue)
 
-Estas capas están identificadas y priorizadas para más adelante — la mayoría tienen sentido
-al desplegar, no en desarrollo local:
-
 - Rotación de refresh tokens (detección de reuso).
-- Configuración de CORS (al conectar el cliente KMP).
-- Cabeceras de seguridad HTTP (HSTS, X-Content-Type-Options, CSP) al desplegar tras HTTPS.
+- CORS (al conectar el cliente KMP).
+- Cabeceras de seguridad HTTP (HSTS, CSP...) al desplegar tras HTTPS.
 - Rate limiting distribuido con Redis (al escalar a varias instancias).
-- IP real del cliente vía `X-Forwarded-For` (tras un proxy de confianza).
-- Límite de tamaño de peticiones y subidas de archivos.
-- Expiración de buckets de rate limiting inactivos (ahora crecen sin límite en memoria).
-- Secretos en un gestor de secretos en producción (ahora en `.env`).
+- IP real vía `X-Forwarded-For` (tras un proxy de confianza).
+- Límite de tamaño de peticiones y subidas.
+- Expiración de buckets de rate limiting inactivos.
+- Secretos en gestor de secretos en producción.
 
 ## Digitalización (OCR)
 
@@ -135,23 +146,21 @@ mock por defecto. Pendiente: PDF, emisor, OCR asíncrono, MinIO, digitalización
 ## Estado actual
 
 - **Fase 0 — Fundamentos** ✅ cerrada y testeada.
-- **Seguridad (JWT + rate limiting)** ✅ implementada (falta rotación de tokens; ver
-  seguridad prevista).
+- **Seguridad (JWT + rate limiting)** ✅ implementada (falta rotación de tokens).
 - **Fase 1 — Digitalización (OCR)** ✅ funcional para gastos.
-- **Fase 2 — Ingresos y clientes** ✅ cerrada (cliente con soft delete, ingreso con estado
-  de cobro y transiciones, gastos e ingresos ligables a cliente).
-- **Fase 3 — Dashboard** ⬜ siguiente: beneficio por periodo, rentabilidad por cliente,
-  pendientes de cobro, total facturado.
+- **Fase 2 — Ingresos y clientes** ✅ cerrada.
+- **Fase 3 — Dashboard** ✅ funcional — resumen, rentabilidad por cliente, pendientes de
+  cobro (ver incidencia conocida arriba, en investigación).
 
 ## Roadmap
 
 | Fase | Foco |
 |------|------|
 | Fase 0 | Backend en pie, CRUD de gasto (hecho) |
-| Seguridad | JWT + rate limiting (hecho; ver seguridad prevista) |
+| Seguridad | JWT + rate limiting (hecho; falta rotación) |
 | Fase 1 | OCR + almacenamiento de archivos (hecho; faltan mejoras) |
 | Fase 2 | Ingresos y clientes (hecho) |
-| Fase 3 | Dashboard: beneficio, rentabilidad por cliente, pendientes de cobro |
+| Fase 3 | Dashboard (hecho; incidencia en rentabilidad multi-cliente en investigación) |
 | Fase 4 | Exportación al gestor, pulido, despliegue |
 | Cliente | App KMP (móvil + escritorio) consumiendo la API |
 | v1+ | Duplicados, recurrentes, presupuestos, categorización automática... |
@@ -166,9 +175,6 @@ cp .env.example .env                 # y rellenar (BD, JWT_SECRET, ruta tessdata
 ./mvnw spring-boot:run               # arranca (mock OCR por defecto)
 ```
 
-- **Modo mock OCR:** arranque normal, no requiere Tesseract.
-- **Modo OCR real:** perfil `ocr` activo (`SPRING_PROFILES_ACTIVE=ocr`) + ruta de tessdata.
-
 API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.html`
 (botón "Authorize" para el token JWT).
 
@@ -179,8 +185,12 @@ API en `http://localhost:8080`. Swagger UI en `http://localhost:8080/swagger-ui.
 ```
 
 Tests unitarios de dominio y servicios (JUnit 5 + Mockito + AssertJ). El login, el parser
-de facturas, las reglas de cliente y las transiciones de cobro del ingreso se construyeron
-con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
+de facturas, las reglas de cliente, las transiciones de cobro y las calculadoras del
+dashboard se construyeron con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
+
+**Lección aprendida:** que los tests unitarios pasen no garantiza el comportamiento correcto
+en producción — antes de dar algo por bueno, se verifica contra datos reales de la BD
+(consulta SQL como referencia, comparación campo a campo con la respuesta de la API).
 
 ## Variables de entorno
 
