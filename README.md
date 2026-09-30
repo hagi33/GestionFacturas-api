@@ -188,9 +188,6 @@ Tests unitarios de dominio y servicios (JUnit 5 + Mockito + AssertJ). El login, 
 de facturas, las reglas de cliente, las transiciones de cobro y las calculadoras del
 dashboard se construyeron con TDD. Los tests usan el mock de OCR, nunca Tesseract real.
 
-**Lección aprendida:** que los tests unitarios pasen no garantiza el comportamiento correcto
-en producción — antes de dar algo por bueno, se verifica contra datos reales de la BD
-(consulta SQL como referencia, comparación campo a campo con la respuesta de la API).
 
 ## Variables de entorno
 
