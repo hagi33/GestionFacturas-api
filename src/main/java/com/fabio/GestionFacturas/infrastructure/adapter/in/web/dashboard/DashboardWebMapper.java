@@ -1,11 +1,13 @@
 package com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard;
 
 import com.fabio.GestionFacturas.domain.dashboard.PendientesCobro;
+import com.fabio.GestionFacturas.domain.dashboard.RentabilidadCliente;
 import com.fabio.GestionFacturas.domain.dashboard.ResumenPeriodo;
 import com.fabio.GestionFacturas.domain.ingreso.Ingreso;
 import com.fabio.GestionFacturas.domain.shared.Dinero;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.IngresoPendienteResponse;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.PendientesCobroResponse;
+import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.RentabilidadClienteResponse;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.ResumenPeriodoResponse;
 
 import java.math.BigDecimal;
@@ -37,6 +39,12 @@ public class DashboardWebMapper {
                 .map(DashboardWebMapper::aItem)
                 .toList();
         return new PendientesCobroResponse(items, pendientes.total().cantidad());
+    }
+
+    public static List<RentabilidadClienteResponse> aRespuesta(List<RentabilidadCliente> rentabilidades) {
+        return rentabilidades.stream()
+                .map(r -> new RentabilidadClienteResponse(r.clienteId(), aRespuesta(r.resumen())))
+                .toList();
     }
 
     private static IngresoPendienteResponse aItem(Ingreso ingreso) {

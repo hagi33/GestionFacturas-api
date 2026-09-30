@@ -2,11 +2,15 @@ package com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard;
 
 import com.fabio.GestionFacturas.application.dashboard.port.in.ObtenerPendientesCobroUseCase;
 import com.fabio.GestionFacturas.application.dashboard.port.in.ObtenerPendientesCobroUseCase.ComandoObtenerPendientesCobro;
+import com.fabio.GestionFacturas.application.dashboard.port.in.ObtenerRentabilidadClientesUseCase;
+import com.fabio.GestionFacturas.application.dashboard.port.in.ObtenerRentabilidadClientesUseCase.ComandoObtenerRentabilidad;
 import com.fabio.GestionFacturas.application.dashboard.port.in.ObtenerResumenPeriodoUseCase;
 import com.fabio.GestionFacturas.application.dashboard.port.in.ObtenerResumenPeriodoUseCase.ComandoObtenerResumen;
 import com.fabio.GestionFacturas.domain.dashboard.PendientesCobro;
+import com.fabio.GestionFacturas.domain.dashboard.RentabilidadCliente;
 import com.fabio.GestionFacturas.domain.dashboard.ResumenPeriodo;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.PendientesCobroResponse;
+import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.RentabilidadClienteResponse;
 import com.fabio.GestionFacturas.infrastructure.adapter.in.web.dashboard.dto.ResumenPeriodoResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Web adapter (inbound) for the dashboard. Depends only on the inbound use-case ports;
@@ -27,11 +32,14 @@ public class DashboardController {
 
     private final ObtenerResumenPeriodoUseCase obtenerResumenPeriodoUseCase;
     private final ObtenerPendientesCobroUseCase obtenerPendientesCobroUseCase;
+    private final ObtenerRentabilidadClientesUseCase obtenerRentabilidadClientesUseCase;
 
     public DashboardController(ObtenerResumenPeriodoUseCase obtenerResumenPeriodoUseCase,
-                               ObtenerPendientesCobroUseCase obtenerPendientesCobroUseCase) {
+                               ObtenerPendientesCobroUseCase obtenerPendientesCobroUseCase,
+                               ObtenerRentabilidadClientesUseCase obtenerRentabilidadClientesUseCase) {
         this.obtenerResumenPeriodoUseCase = obtenerResumenPeriodoUseCase;
         this.obtenerPendientesCobroUseCase = obtenerPendientesCobroUseCase;
+        this.obtenerRentabilidadClientesUseCase = obtenerRentabilidadClientesUseCase;
     }
 
     @GetMapping("/resumen")
@@ -49,5 +57,15 @@ public class DashboardController {
         PendientesCobro pendientes = obtenerPendientesCobroUseCase.obtenerPendientes(
                 new ComandoObtenerPendientesCobro(usuarioId));
         return DashboardWebMapper.aRespuesta(pendientes);
+    }
+
+    @GetMapping("/rentabilidad-clientes")
+    public List<RentabilidadClienteResponse> rentabilidadClientes(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @AuthenticationPrincipal Long usuarioId) {
+        List<RentabilidadCliente> rentabilidades = obtenerRentabilidadClientesUseCase.obtenerRentabilidad(
+                new ComandoObtenerRentabilidad(usuarioId, desde, hasta));
+        return DashboardWebMapper.aRespuesta(rentabilidades);
     }
 }
